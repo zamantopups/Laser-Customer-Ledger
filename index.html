@@ -4,558 +4,898 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Artix Laser Ledger</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Libraries -->
+    <!-- Google Fonts: Ubuntu -->
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- SheetJS for Excel Support -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             --bg-dark: #0f172a;
-            --sidebar-bg: #1e293b;
-            --accent-blue: #38bdf8;
-            --accent-purple: #a855f7;
-            --accent-green: #22c55e;
-            --accent-red: #ef4444;
-            --text-main: #f1f5f9;
+            --panel-dark: #1e293b;
+            --neon-cyan: #22d3ee;
+            --neon-purple: #a855f7;
+            --neon-green: #4ade80;
+            --neon-red: #fb7185;
+            --text-main: #f8fafc;
             --text-dim: #94a3b8;
-            --card-bg: #1e293b;
-            --border-color: #334155;
-            --glow-blue: 0 0 15px rgba(56, 189, 248, 0.4);
-            --glow-purple: 0 0 15px rgba(168, 85, 247, 0.4);
+            --font-main: 'Ubuntu', sans-serif;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); line-height: 1.5; overflow-x: hidden; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        #app { display: flex; min-height: 100vh; }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            transition: background 0.3s ease;
+            overflow-x: hidden;
+        }
 
-        /* Sidebar */
-        aside { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); position: fixed; height: 100vh; z-index: 50; display: flex; flex-direction: column; }
-        .logo-container { padding: 2rem 1.5rem; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-color); }
-        .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); border-radius: 8px; box-shadow: var(--glow-blue); }
-        .logo-text { font-weight: 700; font-size: 1.25rem; background: linear-gradient(to right, var(--accent-blue), var(--accent-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        nav { flex: 1; padding: 1.5rem 0.75rem; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 0.75rem 1rem; border-radius: 8px; color: var(--text-dim); text-decoration: none; cursor: pointer; margin-bottom: 0.5rem; transition: all 0.2s ease; }
-        .nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-main); }
-        .nav-item.active { background: rgba(56, 189, 248, 0.1); color: var(--accent-blue); box-shadow: inset 3px 0 0 var(--accent-blue); }
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .pkr::before { content: "Rs. "; font-size: 0.8em; opacity: 0.8; }
+
+        /* Navigation & Header */
+        header {
+            background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 2px solid var(--neon-purple);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand h1 {
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        nav button {
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 0.5rem 1rem;
+            margin-left: 0.5rem;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        nav button:hover, nav button.active {
+            background: var(--neon-cyan);
+            color: var(--bg-dark);
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
 
         /* Main Content */
-        main { flex: 1; margin-left: 260px; display: flex; flex-direction: column; }
-        header { height: 70px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; position: sticky; top: 0; z-index: 40; }
-        .view-content { padding: 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+        main { padding: 2rem; max-width: 1400px; margin: 0 auto; }
 
-        /* Dashboard & UI Elements */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .stat-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 12px; transition: transform 0.2s ease; }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: var(--glow-blue); }
-        .stat-label { font-size: 0.875rem; color: var(--text-dim); margin-bottom: 0.5rem; }
-        .stat-value { font-size: 1.5rem; font-weight: 700; }
-        .currency::before { content: "PKR "; font-size: 0.75rem; color: var(--text-dim); }
+        .dashboard-filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: var(--panel-dark);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--neon-purple);
+        }
 
-        /* Table */
-        .table-container { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow: auto; margin-top: 1rem; }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { background: rgba(255,255,255,0.02); padding: 1rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--border-color); }
-        td { padding: 1rem; border-bottom: 1px solid var(--border-color); font-size: 0.875rem; }
-        tr:hover td { background: rgba(255,255,255,0.01); }
+        select, input, textarea {
+            background: #0f172a;
+            border: 1px solid var(--text-dim);
+            color: white;
+            padding: 0.6rem;
+            border-radius: 4px;
+            outline: none;
+        }
 
-        /* Forms & Modals */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
-        .modal { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; padding: 2rem; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .form-group { display: flex; flex-direction: column; gap: 5px; }
-        .full { grid-column: span 2; }
-        input, select, textarea { background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; color: var(--text-main); }
+        select:focus, input:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 5px var(--neon-cyan);
+        }
 
-        /* Buttons */
-        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-size: 0.875rem; }
-        .btn-primary { background: var(--accent-blue); color: var(--bg-dark); }
-        .btn-secondary { background: var(--border-color); color: var(--text-main); }
-        .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border: 1px solid var(--accent-red); }
-        .btn-outline { border: 1px solid var(--border-color); background: transparent; color: var(--text-main); }
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
 
-        .tag { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
-        .tag-paid { background: rgba(34, 197, 94, 0.1); color: var(--accent-green); }
-        .tag-due { background: rgba(239, 68, 68, 0.1); color: var(--accent-red); }
+        .card {
+            background: var(--panel-dark);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--neon-cyan);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
 
-        .hidden { display: none !important; }
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 999; }
-        .toast { background: var(--card-bg); border: 1px solid var(--accent-blue); padding: 1rem; border-radius: 8px; margin-top: 10px; animation: slide 0.3s; }
-        @keyframes slide { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        .card h3 { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .card .value { font-size: 1.8rem; font-weight: bold; }
+        .card.balance { border-color: var(--neon-red); }
+        .card.paid { border-color: var(--neon-green); }
 
-        @media print { .no-print { display: none !important; } main { margin-left: 0; } }
+        /* Tables */
+        .table-container {
+            background: var(--panel-dark);
+            border-radius: 12px;
+            padding: 1rem;
+            overflow-x: auto;
+            border: 1px solid #334155;
+        }
+
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { text-align: left; padding: 1rem; color: var(--neon-cyan); border-bottom: 1px solid #334155; cursor: pointer; }
+        td { padding: 1rem; border-bottom: 1px solid #334155; }
+        tr:hover { background: rgba(255,255,255,0.05); }
+
+        .status-due { color: var(--neon-red); font-weight: bold; }
+        .status-paid { color: var(--neon-green); font-weight: bold; }
+
+        /* Modals */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--panel-dark);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid var(--neon-cyan);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group { display: flex; flex-direction: column; margin-bottom: 1rem; }
+        .form-group label { margin-bottom: 0.4rem; color: var(--text-dim); font-size: 0.85rem; }
+        .full-width { grid-column: span 2; }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background: var(--neon-cyan); color: black; }
+        .btn-success { background: var(--neon-green); color: black; }
+        .btn-danger { background: var(--neon-red); color: white; }
+        .btn-secondary { background: var(--text-dim); color: black; }
+
+        /* Print Settings Overlay */
+        @media print {
+            body { background: white !important; color: black !important; }
+            header, nav, .dashboard-filters, .btn, .no-print { display: none !important; }
+            main { padding: 0; }
+            .table-container { background: white !important; border: none !important; padding: 0; }
+            table { color: black !important; border: 1px solid #ccc; width: 100%; }
+            th { color: black !important; border: 1px solid #ccc; background: #eee; }
+            td { border: 1px solid #ccc; }
+            .card { border: 1px solid #ccc !important; color: black !important; background: white !important; box-shadow: none !important; }
+            .status-due { color: #d00 !important; }
+            .status-paid { color: #080 !important; }
+            .print-header { display: block !important; margin-bottom: 20px; }
+            .print-month-label { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+            h1, h2, h3 { color: black !important; text-shadow: none !important; }
+        }
+
+        .print-only { display: none; }
+
+        /* Customer specific styling */
+        .customer-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: black;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
-    <div id="app">
-        <aside class="no-print">
-            <div class="logo-container">
-                <div class="logo-icon"></div>
-                <span class="logo-text">ARTIX LEDGER</span>
-            </div>
-            <nav>
-                <div class="nav-item active" onclick="switchView('dashboard')"><i data-lucide="layout-dashboard"></i> Dashboard</div>
-                <div class="nav-item" onclick="switchView('customers')"><i data-lucide="users"></i> Customers</div>
-                <div class="nav-item" onclick="switchView('records')"><i data-lucide="book-open"></i> Work Records</div>
-                <div class="nav-item" onclick="switchView('backup')"><i data-lucide="database"></i> Backup & Tools</div>
-            </nav>
-        </aside>
-
-        <main>
-            <header class="no-print">
-                <h2 id="view-title">Dashboard</h2>
-                <div class="flex-between gap-2" style="display:flex; align-items:center; gap:10px;">
-                    <select id="filter-month" style="padding: 5px; background: #1e293b; color: white; border: 1px solid #334155; border-radius: 5px;">
-                        <option value="all">All Months</option>
-                        <option value="0">January</option><option value="1">February</option><option value="2">March</option>
-                        <option value="3">April</option><option value="4">May</option><option value="5">June</option>
-                        <option value="6">July</option><option value="7">August</option><option value="8">September</option>
-                        <option value="9">October</option><option value="10">November</option><option value="11">December</option>
-                    </select>
-                    <select id="filter-year" style="padding: 5px; background: #1e293b; color: white; border: 1px solid #334155; border-radius: 5px;"></select>
-                    <button class="btn btn-primary" onclick="openRecordModal()"><i data-lucide="plus"></i> New Entry</button>
-                </div>
-            </header>
-
-            <div class="view-content">
-                <!-- Dashboard -->
-                <section id="view-dashboard">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">Total Amount</div>
-                            <div class="stat-value currency" id="dash-amt">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Received</div>
-                            <div class="stat-value currency" id="dash-rec" style="color: var(--accent-green)">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Balance</div>
-                            <div class="stat-value currency" id="dash-bal" style="color: var(--accent-red)">0</div>
-                        </div>
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr><th>Customer</th><th>Ref</th><th>Total Amt</th><th>Received</th><th>Balance</th></tr>
-                            </thead>
-                            <tbody id="dash-summary-body"></tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- Customers -->
-                <section id="view-customers" class="hidden">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                        <h3>Manage Customers</h3>
-                        <button class="btn btn-primary" onclick="openCustomerModal()"><i data-lucide="user-plus"></i> Add New</button>
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead><tr><th>Name</th><th>Reference</th><th class="no-print">Actions</th></tr></thead>
-                            <tbody id="cust-table-body"></tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- Records -->
-                <section id="view-records" class="hidden">
-                    <div id="drilldown-bar" class="hidden" style="background:#1e293b; padding:10px; border-radius:8px; margin-bottom:10px; border:1px solid #38bdf8; display:flex; justify-content:space-between; align-items:center;">
-                        <span id="drilldown-info">Showing records for...</span>
-                        <button class="btn btn-secondary btn-sm" onclick="resetDrilldown()">Clear Filter</button>
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr><th>Date</th><th>Customer</th><th>Detail</th><th>Qty</th><th>Amount</th><th>Rec</th><th>Bal</th><th class="no-print">Actions</th></tr>
-                            </thead>
-                            <tbody id="rec-table-body"></tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- Backup -->
-                <section id="view-backup" class="hidden">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <h4>Excel Import</h4>
-                            <p class="stat-label">Import from .xlsx file</p>
-                            <input type="file" id="excel-file" accept=".xlsx" style="margin-top:10px; font-size:0.8rem;">
-                            <button class="btn btn-primary mt-4" style="margin-top:10px;" onclick="importFromExcel()">Process Excel</button>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Local Backup</h4>
-                            <p class="stat-label">Export data as JSON</p>
-                            <button class="btn btn-outline" style="margin-top:10px;" onclick="exportJSON()">Export JSON</button>
-                        </div>
-                    </div>
-                </section>
-            </div>
-        </main>
-    </div>
-
-    <!-- Modals -->
-    <div id="modal-customer" class="modal-overlay">
-        <div class="modal">
-            <h3 id="c-modal-title">Customer Details</h3>
-            <form id="form-customer" style="margin-top:1rem;">
-                <input type="hidden" id="edit-c-id">
-                <div class="form-grid">
-                    <div class="form-group full"><label>Customer Name</label><input type="text" id="c-name" required></div>
-                    <div class="form-group full"><label>Reference</label><input type="text" id="c-ref"></div>
-                </div>
-                <div style="margin-top:1.5rem; display:flex; gap:10px;">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModals()">Cancel</button>
-                </div>
-            </form>
+    <header>
+        <div class="brand">
+            <h1>Artix Laser Ledger</h1>
         </div>
-    </div>
+        <nav>
+            <button onclick="switchView('dashboard')" id="btn-dashboard" class="active">Dashboard</button>
+            <button onclick="switchView('records')" id="btn-records">Work Records</button>
+            <button onclick="switchView('customers')" id="btn-customers">Customers</button>
+            <button onclick="switchView('settings')" id="btn-settings">Settings</button>
+        </nav>
+    </header>
 
-    <div id="modal-record" class="modal-overlay">
-        <div class="modal">
-            <h3 id="r-modal-title">Work Entry</h3>
-            <form id="form-record" style="margin-top:1rem;">
-                <input type="hidden" id="edit-r-id">
-                <div class="form-grid">
-                    <div class="form-group"><label>Date</label><input type="date" id="r-date" required></div>
-                    <div class="form-group"><label>Customer</label><select id="r-cust" required></select></div>
-                    <div class="form-group full"><label>Work Detail</label><textarea id="r-detail" rows="2"></textarea></div>
-                    <div class="form-group"><label>Qty</label><input type="number" id="r-qty" value="1"></div>
-                    <div class="form-group"><label>Unit</label><input type="text" id="r-unit" value="Sheets"></div>
-                    <div class="form-group"><label>Total Amount</label><input type="number" id="r-amt" required oninput="updateBal()"></div>
-                    <div class="form-group"><label>Received</label><input type="number" id="r-rec" required oninput="updateBal()"></div>
-                    <div class="form-group full"><label>Balance</label><input type="number" id="r-bal" readonly style="color:var(--accent-blue); font-weight:bold;"></div>
+    <main>
+        <!-- GLOBAL PRINT HEADER -->
+        <div class="print-only print-header">
+            <h1 style="text-align: center;">Artix Laser Ledger</h1>
+            <p id="print-subtitle" style="text-align: center; margin-bottom: 20px;"></p>
+        </div>
+
+        <!-- FILTERS -->
+        <section class="dashboard-filters no-print">
+            <div class="form-group">
+                <label>Filter Month</label>
+                <select id="filter-month" onchange="renderAll()"></select>
+            </div>
+            <div class="form-group">
+                <label>Filter Year</label>
+                <select id="filter-year" onchange="renderAll()"></select>
+            </div>
+            <div style="flex-grow: 1;"></div>
+            <div class="form-group" style="justify-content: flex-end; flex-direction: row; align-items: flex-end; gap: 10px;">
+                <button class="btn btn-primary" onclick="openEntryModal()">+ New Entry</button>
+                <button class="btn btn-success" onclick="window.print()">Print Report</button>
+            </div>
+        </section>
+
+        <!-- DASHBOARD VIEW -->
+        <section id="view-dashboard" class="view">
+            <div class="summary-grid">
+                <div class="card">
+                    <h3>Total Receivables</h3>
+                    <div class="value pkr" id="total-amount">0</div>
                 </div>
-                <div style="margin-top:1.5rem; display:flex; gap:10px;">
+                <div class="card paid">
+                    <h3>Total Received</h3>
+                    <div class="value pkr" id="total-received">0</div>
+                </div>
+                <div class="card balance">
+                    <h3>Net Balance Due</h3>
+                    <div class="value pkr" id="total-balance">0</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h2 style="margin-bottom: 1rem; color: var(--neon-cyan);">Customer Summary</h2>
+                <table id="customer-summary-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable('summary', 'name')">Customer Name ↑↓</th>
+                            <th onclick="sortTable('summary', 'reference')">Reference ↑↓</th>
+                            <th>Total Billed</th>
+                            <th>Total Paid</th>
+                            <th>Amount to Receive (Balance)</th>
+                            <th class="no-print">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- WORK RECORDS VIEW -->
+        <section id="view-records" class="view hidden">
+            <div class="table-container">
+                <h2 style="margin-bottom: 1rem; color: var(--neon-cyan);">All Work Entries</h2>
+                <table id="work-records-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable('entries', 'date')">Date ↑↓</th>
+                            <th>Day</th>
+                            <th onclick="sortTable('entries', 'customerName')">Customer ↑↓</th>
+                            <th>Work Detail</th>
+                            <th>Qty</th>
+                            <th>Amount</th>
+                            <th>Received</th>
+                            <th onclick="sortTable('entries', 'reference')">Ref ↑↓</th>
+                            <th>Balance</th>
+                            <th class="no-print">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="records-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- CUSTOMERS LIST VIEW -->
+        <section id="view-customers" class="view hidden">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
+                <h2 style="color: var(--neon-cyan);">Manage Customers</h2>
+                <button class="btn btn-primary" onclick="openCustomerModal()">+ Add Customer</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Color</th>
+                            <th>Customer Name</th>
+                            <th>Primary Reference</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customers-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SETTINGS VIEW -->
+        <section id="view-settings" class="view hidden">
+            <div class="summary-grid">
+                <div class="card">
+                    <h3>Data Management</h3>
+                    <p style="margin-bottom: 1rem; color: var(--text-dim);">Backup your ledger locally or restore from a previous file.</p>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="exportData()">Export Backup (JSON)</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Import Backup</button>
+                        <input type="file" id="import-file" class="hidden" onchange="importData(event)">
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Excel Tools</h3>
+                    <p style="margin-bottom: 1rem; color: var(--text-dim);">Import entries from Excel or download template.</p>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="downloadSampleExcel()">Sample Excel</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('excel-file').click()">Import Excel</button>
+                        <input type="file" id="excel-file" class="hidden" accept=".xlsx, .xls" onchange="handleExcelImport(event)">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CUSTOMER SPECIFIC VIEW (MODAL-LIKE) -->
+        <div id="customer-drilldown" class="modal hidden">
+            <div class="modal-content" style="max-width: 95%; width: 95%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 id="drilldown-title" style="color: var(--neon-cyan);">Customer Statement</h2>
+                    <div class="no-print">
+                        <button class="btn btn-success" onclick="window.print()">Print Statement</button>
+                        <button class="btn btn-secondary" onclick="closeDrilldown()">Close</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="drilldown-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Day</th>
+                                <th>Work Detail</th>
+                                <th>Qty/Unit</th>
+                                <th>Amount</th>
+                                <th>Received</th>
+                                <th>Balance</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="drilldown-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ENTRY MODAL -->
+    <div id="entry-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="entry-modal-title" style="margin-bottom: 1.5rem; color: var(--neon-cyan);">New Entry</h2>
+            <form id="entry-form" onsubmit="saveEntry(event)">
+                <input type="hidden" id="entry-id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="entry-date" required onchange="updateDayLabel()">
+                        <small id="day-display" style="color: var(--neon-purple); margin-top: 4px;"></small>
+                    </div>
+                    <div class="form-group">
+                        <label>Customer</label>
+                        <select id="entry-customer" required></select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Work Detail</label>
+                        <input type="text" id="entry-work" placeholder="e.g., Laser Cutting Sheet #4" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" id="entry-qty" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Unit</label>
+                        <select id="entry-unit">
+                            <option value="Sheets">Sheets</option>
+                            <option value="Pcs">Pcs</option>
+                            <option value="Box">Box</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Total Amount (PKR)</label>
+                        <input type="number" id="entry-amount" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Received Amount (PKR)</label>
+                        <input type="number" id="entry-received" value="0">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Remarks / Notes</label>
+                        <textarea id="entry-remarks" rows="2"></textarea>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('entry-modal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Entry</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModals()">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="toast-container"></div>
+    <!-- CUSTOMER MODAL -->
+    <div id="customer-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="customer-modal-title" style="margin-bottom: 1.5rem; color: var(--neon-cyan);">Add Customer</h2>
+            <form id="customer-form" onsubmit="saveCustomer(event)">
+                <input type="hidden" id="customer-id">
+                <div class="form-group">
+                    <label>Customer Name</label>
+                    <input type="text" id="cust-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Reference</label>
+                    <input type="text" id="cust-ref" placeholder="Direct / Referrer Name">
+                </div>
+                <div class="form-group">
+                    <label>Identify Color</label>
+                    <input type="color" id="cust-color" value="#22d3ee" style="height: 50px;">
+                </div>
+                <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('customer-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
-        // --- State ---
-        let customers = JSON.parse(localStorage.getItem('artix_c')) || [];
-        let records = JSON.parse(localStorage.getItem('artix_r')) || [];
-        let activeView = 'dashboard';
-        let drilldownId = null;
+        // --- DATA STATE ---
+        let customers = JSON.parse(localStorage.getItem('artix_customers')) || [];
+        let entries = JSON.parse(localStorage.getItem('artix_entries')) || [];
+        let sortConfig = { summary: { key: 'name', dir: 1 }, entries: { key: 'date', dir: -1 } };
 
-        // --- Init ---
-        window.onload = function() {
-            // Check for Lucide
-            const checkLucide = setInterval(() => {
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                    clearInterval(checkLucide);
-                }
-            }, 100);
-
-            // Populate Year Filter
-            const yr = document.getElementById('filter-year');
-            const now = new Date().getFullYear();
-            for(let i=now-2; i<=now+1; i++) {
-                const o = document.createElement('option');
-                o.value = i; o.textContent = i;
-                if(i===now) o.selected = true;
-                yr.appendChild(o);
-            }
-
-            // Listeners
-            document.getElementById('filter-month').onchange = render;
-            document.getElementById('filter-year').onchange = render;
-            
-            document.getElementById('form-customer').onsubmit = saveCustomer;
-            document.getElementById('form-record').onsubmit = saveRecord;
-
-            render();
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            initFilters();
+            renderAll();
         };
 
-        function render() {
-            const m = document.getElementById('filter-month').value;
-            const y = parseInt(document.getElementById('filter-year').value);
-
-            let filtered = records.filter(r => {
-                const d = new Date(r.date);
-                const monthMatch = m === 'all' ? true : d.getMonth() == m;
-                const yearMatch = d.getFullYear() === y;
-                const drillMatch = drilldownId ? r.customerId === drilldownId : true;
-                return monthMatch && yearMatch && drillMatch;
-            });
-
-            renderDashboard(filtered);
-            renderCustomers();
-            renderRecords(filtered);
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        // --- View Logic ---
-        function switchView(id) {
-            activeView = id;
-            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-            document.getElementById('view-'+id).classList.remove('hidden');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('view-title').textContent = id.charAt(0).toUpperCase() + id.slice(1);
+        function initFilters() {
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const mSelect = document.getElementById('filter-month');
+            const ySelect = document.getElementById('filter-year');
             
-            // Find nav item to highlight
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                if(item.textContent.toLowerCase().includes(id)) item.classList.add('active');
+            mSelect.innerHTML = `<option value="all">All Months</option>` + months.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+            
+            const currentYear = new Date().getFullYear();
+            let years = `<option value="all">All Years</option>`;
+            for(let i = currentYear - 2; i <= currentYear + 1; i++) {
+                years += `<option value="${i}" ${i === currentYear ? 'selected' : ''}>${i}</option>`;
+            }
+            ySelect.innerHTML = years;
+        }
+
+        // --- CORE RENDERING ---
+        function renderAll() {
+            const month = document.getElementById('filter-month').value;
+            const year = document.getElementById('filter-year').value;
+
+            // Update print subtitle
+            const mText = month === 'all' ? 'All Months' : document.getElementById('filter-month').options[document.getElementById('filter-month').selectedIndex].text;
+            const yText = year === 'all' ? 'All Years' : year;
+            document.getElementById('print-subtitle').innerText = `Report for: ${mText} ${yText}`;
+
+            let filteredEntries = entries.filter(e => {
+                const d = new Date(e.date);
+                const mMatch = month === 'all' || d.getMonth() == month;
+                const yMatch = year === 'all' || d.getFullYear() == year;
+                return mMatch && yMatch;
             });
-            render();
-        }
 
-        function openRecordModal(id = null) {
-            const modal = document.getElementById('modal-record');
-            const select = document.getElementById('r-cust');
-            select.innerHTML = '<option value="">Select Customer</option>';
-            customers.forEach(c => {
-                const o = document.createElement('option');
-                o.value = c.id; o.textContent = c.name;
-                select.appendChild(o);
-            });
-
-            const form = document.getElementById('form-record');
-            form.reset();
-            document.getElementById('r-date').valueAsDate = new Date();
-            document.getElementById('edit-r-id').value = "";
-
-            if(id) {
-                const r = records.find(x => x.id === id);
-                document.getElementById('edit-r-id').value = r.id;
-                document.getElementById('r-date').value = r.date;
-                document.getElementById('r-cust').value = r.customerId;
-                document.getElementById('r-detail').value = r.detail;
-                document.getElementById('r-qty').value = r.qty;
-                document.getElementById('r-unit').value = r.unit;
-                document.getElementById('r-amt').value = r.amount;
-                document.getElementById('r-rec').value = r.received;
-                updateBal();
-            } else if(drilldownId) {
-                document.getElementById('r-cust').value = drilldownId;
-            }
-
-            modal.style.display = 'flex';
-        }
-
-        function openCustomerModal(id = null) {
-            const modal = document.getElementById('modal-customer');
-            const form = document.getElementById('form-customer');
-            form.reset();
-            document.getElementById('edit-c-id').value = "";
-            if(id) {
-                const c = customers.find(x => x.id === id);
-                document.getElementById('edit-c-id').value = c.id;
-                document.getElementById('c-name').value = c.name;
-                document.getElementById('c-ref').value = c.reference;
-            }
-            modal.style.display = 'flex';
-        }
-
-        function closeModals() {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-        }
-
-        function updateBal() {
-            const a = parseFloat(document.getElementById('r-amt').value) || 0;
-            const r = parseFloat(document.getElementById('r-rec').value) || 0;
-            document.getElementById('r-bal').value = a - r;
-        }
-
-        // --- Data Logic ---
-        function saveCustomer(e) {
-            e.preventDefault();
-            const id = document.getElementById('edit-c-id').value;
-            const data = {
-                id: id || Date.now().toString(),
-                name: document.getElementById('c-name').value,
-                reference: document.getElementById('c-ref').value
-            };
-            if(id) {
-                const i = customers.findIndex(x => x.id === id);
-                customers[i] = data;
-            } else {
-                customers.push(data);
-            }
-            localStorage.setItem('artix_c', JSON.stringify(customers));
-            closeModals();
-            render();
-            showToast("Customer Saved");
-        }
-
-        function saveRecord(e) {
-            e.preventDefault();
-            const id = document.getElementById('edit-r-id').value;
-            const amt = parseFloat(document.getElementById('r-amt').value) || 0;
-            const rec = parseFloat(document.getElementById('r-rec').value) || 0;
-            const data = {
-                id: id || Date.now().toString(),
-                date: document.getElementById('r-date').value,
-                customerId: document.getElementById('r-cust').value,
-                detail: document.getElementById('r-detail').value,
-                qty: document.getElementById('r-qty').value,
-                unit: document.getElementById('r-unit').value,
-                amount: amt,
-                received: rec,
-                balance: amt - rec
-            };
-            if(id) {
-                const i = records.findIndex(x => x.id === id);
-                records[i] = data;
-            } else {
-                records.push(data);
-            }
-            localStorage.setItem('artix_r', JSON.stringify(records));
-            closeModals();
-            render();
-            showToast("Record Saved");
-        }
-
-        function deleteRecord(id) {
-            if(!confirm("Delete this entry?")) return;
-            records = records.filter(r => r.id !== id);
-            localStorage.setItem('artix_r', JSON.stringify(records));
-            render();
+            renderDashboard(filteredEntries);
+            renderRecords(filteredEntries);
+            renderCustomers();
+            updateCustomerDropdown();
+            saveToLocal();
         }
 
         function renderDashboard(filtered) {
-            let tA = 0, tR = 0;
-            filtered.forEach(r => { tA += r.amount; tR += r.received; });
-            document.getElementById('dash-amt').textContent = tA.toLocaleString();
-            document.getElementById('dash-rec').textContent = tR.toLocaleString();
-            document.getElementById('dash-bal').textContent = (tA - tR).toLocaleString();
+            let totalAmt = 0;
+            let totalRec = 0;
+            const summaryData = {};
 
-            const body = document.getElementById('dash-summary-body');
-            body.innerHTML = '';
-            customers.forEach(c => {
-                const cRecs = records.filter(r => r.customerId === c.id);
-                let cA = 0, cR = 0;
-                cRecs.forEach(r => { cA += r.amount; cR += r.received; });
-                if(cA === 0 && cR === 0) return;
-
-                const tr = document.createElement('tr');
-                tr.style.cursor = 'pointer';
-                tr.onclick = () => { drilldownId = c.id; switchView('records'); };
-                tr.innerHTML = `<td>${c.name}</td><td>${c.reference || '-'}</td><td>${cA.toLocaleString()}</td><td>${cR.toLocaleString()}</td><td class="tag ${cA-cR > 0 ? 'tag-due':'tag-paid'}">${(cA-cR).toLocaleString()}</td>`;
-                body.appendChild(tr);
+            // Calculate totals and grouping
+            filtered.forEach(e => {
+                totalAmt += parseFloat(e.amount);
+                totalRec += parseFloat(e.received);
+                
+                if (!summaryData[e.customerId]) {
+                    const cust = customers.find(c => c.id === e.customerId) || { name: 'Unknown', reference: 'N/A' };
+                    summaryData[e.customerId] = { 
+                        id: e.customerId,
+                        name: cust.name, 
+                        reference: cust.reference || 'Direct',
+                        billed: 0, 
+                        paid: 0 
+                    };
+                }
+                summaryData[e.customerId].billed += parseFloat(e.amount);
+                summaryData[e.customerId].paid += parseFloat(e.received);
             });
-        }
 
-        function renderCustomers() {
-            const body = document.getElementById('cust-table-body');
-            body.innerHTML = '';
-            customers.forEach(c => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${c.name}</td><td>${c.reference || '-'}</td><td class="no-print">
-                    <button class="btn btn-outline btn-sm" onclick="openCustomerModal('${c.id}')">Edit</button>
-                </td>`;
-                body.appendChild(tr);
+            document.getElementById('total-amount').innerText = totalAmt.toLocaleString();
+            document.getElementById('total-received').innerText = totalRec.toLocaleString();
+            document.getElementById('total-balance').innerText = (totalAmt - totalRec).toLocaleString();
+
+            const tbody = document.getElementById('summary-body');
+            const summaryArr = Object.values(summaryData);
+            
+            // Sort summary
+            summaryArr.sort((a, b) => {
+                let valA = a[sortConfig.summary.key];
+                let valB = b[sortConfig.summary.key];
+                return valA > valB ? sortConfig.summary.dir : -sortConfig.summary.dir;
             });
+
+            tbody.innerHTML = summaryArr.map(s => `
+                <tr>
+                    <td>
+                        <a href="#" onclick="viewCustomerDrilldown('${s.id}')" style="color: var(--neon-cyan); text-decoration: none; font-weight: bold;">
+                            ${s.name}
+                        </a>
+                    </td>
+                    <td>${s.reference}</td>
+                    <td class="pkr">${s.billed.toLocaleString()}</td>
+                    <td class="pkr">${s.paid.toLocaleString()}</td>
+                    <td class="pkr ${s.billed - s.paid > 0 ? 'status-due' : 'status-paid'}">${(s.billed - s.paid).toLocaleString()}</td>
+                    <td class="no-print">
+                        <button class="btn btn-secondary" onclick="viewCustomerDrilldown('${s.id}')">View Details</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         function renderRecords(filtered) {
-            const body = document.getElementById('rec-table-body');
-            body.innerHTML = '';
-            const bar = document.getElementById('drilldown-bar');
-            if(drilldownId) {
-                bar.classList.remove('hidden');
-                const c = customers.find(x => x.id === drilldownId);
-                document.getElementById('drilldown-info').textContent = "Ledger for: " + (c ? c.name : 'Unknown');
-            } else {
-                bar.classList.add('hidden');
-            }
-
-            filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
-            filtered.forEach(r => {
-                const c = customers.find(x => x.id === r.customerId);
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${r.date}</td><td>${c ? c.name : 'Unknown'}</td><td>${r.detail}</td><td>${r.qty} ${r.unit}</td><td>${r.amount}</td><td>${r.received}</td><td class="tag ${r.balance > 0 ? 'tag-due':'tag-paid'}">${r.balance}</td><td class="no-print">
-                    <button class="btn btn-outline btn-sm" onclick="openRecordModal('${r.id}')">Edit</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteRecord('${r.id}')">Del</button>
-                </td>`;
-                body.appendChild(tr);
-            });
-        }
-
-        function resetDrilldown() { drilldownId = null; render(); }
-
-        // --- Tools ---
-        async function importFromExcel() {
-            const fileInput = document.getElementById('excel-file');
-            if (!fileInput.files.length) { showToast("Select a file first", "error"); return; }
+            const tbody = document.getElementById('records-body');
             
-            const file = fileInput.files[0];
-            const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data);
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(sheet);
-
-            let added = 0;
-            json.forEach(row => {
-                // Map columns: Customer Name, Date, Amount, Received, Detail, Qty, Unit, Reference
-                let cName = row['Customer Name'] || row['Customer'] || row['Name'];
-                if(!cName) return;
-
-                let c = customers.find(x => x.name.toLowerCase() === cName.toLowerCase());
-                if(!c) {
-                    c = { id: Date.now().toString() + Math.random(), name: cName, reference: row['Reference'] || '' };
-                    customers.push(c);
-                }
-
-                const amt = parseFloat(row['Amount'] || row['Total']) || 0;
-                const rec = parseFloat(row['Received'] || row['Paid']) || 0;
-                
-                // Try to parse excel serial date or string date
-                let dStr = row['Date'];
-                if(typeof dStr === 'number') {
-                    const d = new Date((dStr - 25569) * 86400 * 1000);
-                    dStr = d.toISOString().split('T')[0];
-                } else if(!dStr) {
-                    dStr = new Date().toISOString().split('T')[0];
-                }
-
-                records.push({
-                    id: Date.now().toString() + Math.random(),
-                    date: dStr,
-                    customerId: c.id,
-                    detail: row['Work Detail'] || row['Detail'] || '',
-                    qty: row['Quantity'] || row['Qty'] || 1,
-                    unit: row['Unit'] || 'Sheets',
-                    amount: amt,
-                    received: rec,
-                    balance: amt - rec
-                });
-                added++;
+            filtered.sort((a, b) => {
+                let valA = a[sortConfig.entries.key];
+                let valB = b[sortConfig.entries.key];
+                return valA > valB ? sortConfig.entries.dir : -sortConfig.entries.dir;
             });
 
-            localStorage.setItem('artix_c', JSON.stringify(customers));
-            localStorage.setItem('artix_r', JSON.stringify(records));
-            render();
-            showToast(`Imported ${added} records`);
+            tbody.innerHTML = filtered.map(e => {
+                const cust = customers.find(c => c.id === e.customerId) || { name: 'Deleted User', color: '#666' };
+                const bal = e.amount - e.received;
+                return `
+                <tr>
+                    <td>${e.date}</td>
+                    <td style="font-size: 0.8rem; opacity: 0.7;">${e.day}</td>
+                    <td><span class="customer-tag" style="background: ${cust.color}">${cust.name}</span></td>
+                    <td>${e.workDetail}</td>
+                    <td>${e.quantity} ${e.unit}</td>
+                    <td class="pkr">${e.amount}</td>
+                    <td class="pkr">${e.received}</td>
+                    <td>${e.reference}</td>
+                    <td class="pkr ${bal > 0 ? 'status-due' : 'status-paid'}">${bal}</td>
+                    <td class="no-print">
+                        <button onclick="editEntry('${e.id}')" style="background:none; border:none; color:var(--neon-cyan); cursor:pointer;">Edit</button>
+                        <button onclick="deleteEntry('${e.id}')" style="background:none; border:none; color:var(--neon-red); cursor:pointer; margin-left:10px;">Del</button>
+                    </td>
+                </tr>
+            `}).join('');
         }
 
-        function exportJSON() {
-            const data = JSON.stringify({customers, records});
-            const blob = new Blob([data], {type: 'application/json'});
+        function renderCustomers() {
+            const tbody = document.getElementById('customers-body');
+            tbody.innerHTML = customers.map(c => `
+                <tr>
+                    <td><div style="width:20px; height:20px; background:${c.color}; border-radius:4px;"></div></td>
+                    <td>${c.name}</td>
+                    <td>${c.reference || 'Direct'}</td>
+                    <td>
+                        <button onclick="editCustomer('${c.id}')" class="btn btn-secondary btn-sm">Edit</button>
+                        <button onclick="deleteCustomer('${c.id}')" class="btn btn-danger btn-sm">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- CUSTOMER LOGIC ---
+        function openCustomerModal() {
+            document.getElementById('customer-modal-title').innerText = "Add Customer";
+            document.getElementById('customer-id').value = "";
+            document.getElementById('customer-form').reset();
+            document.getElementById('customer-modal').classList.remove('hidden');
+        }
+
+        function saveCustomer(e) {
+            e.preventDefault();
+            const id = document.getElementById('customer-id').value || Date.now().toString();
+            const name = document.getElementById('cust-name').value;
+            const ref = document.getElementById('cust-ref').value;
+            const color = document.getElementById('cust-color').value;
+
+            const idx = customers.findIndex(c => c.id === id);
+            if (idx > -1) customers[idx] = { id, name, reference: ref, color };
+            else customers.push({ id, name, reference: ref, color });
+
+            closeModal('customer-modal');
+            renderAll();
+        }
+
+        function editCustomer(id) {
+            const c = customers.find(x => x.id === id);
+            if (!c) return;
+            document.getElementById('customer-id').value = c.id;
+            document.getElementById('cust-name').value = c.name;
+            document.getElementById('cust-ref').value = c.reference;
+            document.getElementById('cust-color').value = c.color;
+            document.getElementById('customer-modal-title').innerText = "Edit Customer";
+            document.getElementById('customer-modal').classList.remove('hidden');
+        }
+
+        function deleteCustomer(id) {
+            if (confirm("Are you sure? This will not delete their entries but the customer name will show as 'Deleted'.")) {
+                customers = customers.filter(c => c.id !== id);
+                renderAll();
+            }
+        }
+
+        // --- ENTRY LOGIC ---
+        function openEntryModal() {
+            if (customers.length === 0) {
+                alert("Please add at least one customer first!");
+                switchView('customers');
+                return;
+            }
+            document.getElementById('entry-modal-title').innerText = "New Entry";
+            document.getElementById('entry-id').value = "";
+            document.getElementById('entry-form').reset();
+            document.getElementById('entry-date').valueAsDate = new Date();
+            updateDayLabel();
+            document.getElementById('entry-modal').classList.remove('hidden');
+        }
+
+        function updateDayLabel() {
+            const dateVal = document.getElementById('entry-date').value;
+            if(!dateVal) return;
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const d = new Date(dateVal);
+            document.getElementById('day-display').innerText = days[d.getDay()];
+        }
+
+        function saveEntry(e) {
+            e.preventDefault();
+            const id = document.getElementById('entry-id').value || Date.now().toString();
+            const custId = document.getElementById('entry-customer').value;
+            const cust = customers.find(c => c.id === custId);
+            const date = document.getElementById('entry-date').value;
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const day = days[new Date(date).getDay()];
+
+            const newEntry = {
+                id,
+                customerId: custId,
+                customerName: cust.name,
+                date,
+                day,
+                workDetail: document.getElementById('entry-work').value,
+                quantity: document.getElementById('entry-qty').value,
+                unit: document.getElementById('entry-unit').value,
+                amount: parseFloat(document.getElementById('entry-amount').value),
+                received: parseFloat(document.getElementById('entry-received').value),
+                remarks: document.getElementById('entry-remarks').value,
+                reference: cust.reference || 'Direct'
+            };
+
+            const idx = entries.findIndex(x => x.id === id);
+            if (idx > -1) entries[idx] = newEntry;
+            else entries.push(newEntry);
+
+            closeModal('entry-modal');
+            renderAll();
+        }
+
+        function editEntry(id) {
+            const e = entries.find(x => x.id === id);
+            if (!e) return;
+            document.getElementById('entry-id').value = e.id;
+            document.getElementById('entry-customer').value = e.customerId;
+            document.getElementById('entry-date').value = e.date;
+            document.getElementById('entry-work').value = e.workDetail;
+            document.getElementById('entry-qty').value = e.quantity;
+            document.getElementById('entry-unit').value = e.unit;
+            document.getElementById('entry-amount').value = e.amount;
+            document.getElementById('entry-received').value = e.received;
+            document.getElementById('entry-remarks').value = e.remarks;
+            
+            updateDayLabel();
+            document.getElementById('entry-modal-title').innerText = "Edit Entry";
+            document.getElementById('entry-modal').classList.remove('hidden');
+        }
+
+        function deleteEntry(id) {
+            if(confirm("Delete this entry?")) {
+                entries = entries.filter(e => e.id !== id);
+                renderAll();
+            }
+        }
+
+        // --- DRILLDOWN ---
+        function viewCustomerDrilldown(custId) {
+            const cust = customers.find(c => c.id === custId);
+            const filtered = entries.filter(e => e.customerId === custId);
+            
+            document.getElementById('drilldown-title').innerText = `${cust.name}'s Statement (${cust.reference || 'Direct'})`;
+            
+            const tbody = document.getElementById('drilldown-body');
+            let runningBalance = 0;
+            
+            // Sort by date for ledger view
+            filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            tbody.innerHTML = filtered.map(e => {
+                runningBalance += (e.amount - e.received);
+                return `
+                    <tr>
+                        <td>${e.date}</td>
+                        <td>${e.day}</td>
+                        <td>${e.workDetail}</td>
+                        <td>${e.quantity} ${e.unit}</td>
+                        <td class="pkr">${e.amount}</td>
+                        <td class="pkr">${e.received}</td>
+                        <td class="pkr ${runningBalance > 0 ? 'status-due' : 'status-paid'}">${runningBalance}</td>
+                        <td>${e.remarks || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('customer-drilldown').classList.remove('hidden');
+        }
+
+        function closeDrilldown() {
+            document.getElementById('customer-drilldown').classList.add('hidden');
+        }
+
+        // --- UTILS ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+            
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + viewId).classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function updateCustomerDropdown() {
+            const select = document.getElementById('entry-customer');
+            select.innerHTML = customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+
+        function sortTable(type, key) {
+            if (sortConfig[type].key === key) {
+                sortConfig[type].dir *= -1;
+            } else {
+                sortConfig[type].key = key;
+                sortConfig[type].dir = 1;
+            }
+            renderAll();
+        }
+
+        function saveToLocal() {
+            localStorage.setItem('artix_customers', JSON.stringify(customers));
+            localStorage.setItem('artix_entries', JSON.stringify(entries));
+        }
+
+        // --- EXCEL & BACKUP ---
+        function exportData() {
+            const data = { customers, entries };
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = "artix_backup.json";
+            a.href = url;
+            a.download = `Artix_Ledger_Backup_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
         }
 
-        function showToast(m, type="success") {
-            const c = document.getElementById('toast-container');
-            const t = document.createElement('div');
-            t.className = "toast";
-            t.style.borderLeft = type === "success" ? "4px solid #22c55e" : "4px solid #ef4444";
-            t.textContent = m;
-            c.appendChild(t);
-            setTimeout(() => t.remove(), 3000);
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.customers && data.entries) {
+                        customers = data.customers;
+                        entries = data.entries;
+                        renderAll();
+                        alert("Data restored successfully!");
+                    }
+                } catch (err) { alert("Invalid backup file."); }
+            };
+            reader.readAsText(file);
+        }
+
+        function downloadSampleExcel() {
+            const headers = [["Date", "CustomerName", "WorkDetail", "Quantity", "Unit", "Amount", "Received", "Reference", "Remarks"]];
+            const sampleData = [["2023-10-25", "Demo Customer", "Laser Cutting", "10", "Pcs", "5000", "2000", "", "Urgent work"]];
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(headers.concat(sampleData));
+            XLSX.utils.book_append_sheet(wb, ws, "Entries");
+            XLSX.writeFile(wb, "Artix_Sample_Template.xlsx");
+        }
+
+        function handleExcelImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet);
+                
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+                json.forEach(row => {
+                    // Logic: Auto handle customer
+                    let cust = customers.find(c => c.name.toLowerCase() === (row.CustomerName || "").toLowerCase());
+                    if (!cust && row.CustomerName) {
+                        cust = { 
+                            id: Date.now().toString() + Math.random(), 
+                            name: row.CustomerName, 
+                            reference: row.Reference || "Direct", 
+                            color: "#" + Math.floor(Math.random()*16777215).toString(16) 
+                        };
+                        customers.push(cust);
+                    }
+
+                    if (cust) {
+                        const dateStr = row.Date || new Date().toISOString().split('T')[0];
+                        entries.push({
+                            id: Date.now().toString() + Math.random(),
+                            customerId: cust.id,
+                            customerName: cust.name,
+                            date: dateStr,
+                            day: days[new Date(dateStr).getDay()],
+                            workDetail: row.WorkDetail || "Imported Work",
+                            quantity: row.Quantity || 0,
+                            unit: row.Unit || "Pcs",
+                            amount: parseFloat(row.Amount || 0),
+                            received: parseFloat(row.Received || 0),
+                            reference: row.Reference || cust.reference || "Direct",
+                            remarks: row.Remarks || ""
+                        });
+                    }
+                });
+                renderAll();
+                alert("Excel data imported successfully!");
+            };
+            reader.readAsArrayBuffer(file);
         }
     </script>
 </body>
