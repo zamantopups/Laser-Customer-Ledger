@@ -80,7 +80,7 @@
             color: var(--gaming-accent);
         }
 
-        /* Color Circles for Customers */
+        /* Color Dot for Customers */
         .color-dot {
             width: 12px;
             height: 12px;
@@ -99,7 +99,7 @@
             <p class="text-slate-400">Professional Record Management System</p>
         </div>
         <div class="flex gap-2 mt-4 md:mt-0">
-            <button onclick="exportBackup()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm transition">Backup</button>
+            <button onclick="exportBackup()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm transition">Backup Data</button>
             <label class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm cursor-pointer transition">
                 Restore <input type="file" id="restoreFile" class="hidden" onchange="importBackup(event)">
             </label>
@@ -132,7 +132,7 @@
 
         <!-- Quick Entry Form -->
         <div class="gaming-card p-6 rounded-xl mb-8 no-print">
-            <h2 class="header-font text-xl mb-4">NEW ENTRY</h2>
+            <h2 class="header-font text-xl mb-4">Add New Entry</h2>
             <form id="entry-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <input type="hidden" id="entry-id">
                 <div class="flex flex-col">
@@ -148,11 +148,11 @@
                     <input type="text" id="entry-ref" placeholder="Direct or Name" class="bg-slate-800 border border-slate-700 p-2 rounded text-white focus:outline-none focus:border-sky-500">
                 </div>
                 <div class="flex flex-col">
-                    <label class="text-xs text-slate-400 mb-1">Work Detail</label>
-                    <input type="text" id="entry-work" placeholder="Cutting, Engraving..." class="bg-slate-800 border border-slate-700 p-2 rounded text-white focus:outline-none focus:border-sky-500">
+                    <label class="text-xs text-slate-400 mb-1">Work Description</label>
+                    <input type="text" id="entry-work" placeholder="Cutting, Engraving etc." class="bg-slate-800 border border-slate-700 p-2 rounded text-white focus:outline-none focus:border-sky-500">
                 </div>
                 <div class="flex flex-col">
-                    <label class="text-xs text-slate-400 mb-1">Qty</label>
+                    <label class="text-xs text-slate-400 mb-1">Quantity</label>
                     <input type="number" id="entry-qty" placeholder="0" class="bg-slate-800 border border-slate-700 p-2 rounded text-white focus:outline-none focus:border-sky-500">
                 </div>
                 <div class="flex flex-col">
@@ -164,15 +164,15 @@
                     </select>
                 </div>
                 <div class="flex flex-col">
-                    <label class="text-xs text-slate-400 mb-1">Total Amount</label>
+                    <label class="text-xs text-slate-400 mb-1">Total Amount (PKR)</label>
                     <input type="number" id="entry-amount" placeholder="0.00" class="bg-slate-800 border border-slate-700 p-2 rounded text-white focus:outline-none focus:border-sky-500">
                 </div>
                 <div class="flex flex-col">
-                    <label class="text-xs text-slate-400 mb-1">Received (PKR)</label>
+                    <label class="text-xs text-slate-400 mb-1">Received Amount (PKR)</label>
                     <input type="number" id="entry-received" placeholder="0.00" class="bg-slate-800 border border-slate-700 p-2 rounded text-white focus:outline-none focus:border-sky-500">
                 </div>
                 <div class="flex flex-col md:col-span-3">
-                    <label class="text-xs text-slate-400 mb-1">Remarks / Notes</label>
+                    <label class="text-xs text-slate-400 mb-1">Notes / Remarks</label>
                     <input type="text" id="entry-notes" placeholder="Special instructions..." class="bg-slate-800 border border-slate-700 p-2 rounded text-white focus:outline-none focus:border-sky-500">
                 </div>
                 <div class="flex items-end">
@@ -183,7 +183,7 @@
         </div>
     </section>
 
-    <!-- Entries View -->
+    <!-- Records View -->
     <section id="view-entries" class="tab-content hidden">
         <div class="flex flex-col md:flex-row justify-between gap-4 mb-4 no-print">
             <div class="flex gap-2">
@@ -197,11 +197,11 @@
                 <select id="filter-year" onchange="renderEntries()" class="bg-slate-800 border border-slate-700 p-2 rounded text-white">
                     <option value="">All Years</option>
                 </select>
-                <input type="text" id="search-entries" onkeyup="renderEntries()" placeholder="Search work/ref..." class="bg-slate-800 border border-slate-700 p-2 rounded text-white">
+                <input type="text" id="search-entries" onkeyup="renderEntries()" placeholder="Search work or ref..." class="bg-slate-800 border border-slate-700 p-2 rounded text-white">
             </div>
             <div class="flex gap-2">
-                <button onclick="printReport('entries')" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded font-bold">Print Record List</button>
-                <label class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded font-bold cursor-pointer">
+                <button onclick="printReport('entries')" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded font-bold text-sm">Print List</button>
+                <label class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded font-bold cursor-pointer text-sm">
                     Excel Import <input type="file" id="excelFile" class="hidden" onchange="handleExcel(event)">
                 </label>
                 <button onclick="downloadSampleExcel()" class="bg-slate-600 px-3 py-2 rounded text-xs">Sample Sheet</button>
@@ -212,7 +212,7 @@
             <div class="print-only hidden p-4 text-center border-b border-black mb-4">
                 <h1 class="text-2xl font-bold">ARTIX LASER LEDGER</h1>
                 <p id="print-month-display" class="font-bold"></p>
-                <p class="text-sm">Work Record Statement</p>
+                <p class="text-sm">Work Records Report</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
@@ -220,13 +220,13 @@
                         <tr>
                             <th class="p-4 cursor-pointer hover:text-white" onclick="sortData('date')">Date & Day</th>
                             <th class="p-4 cursor-pointer hover:text-white" onclick="sortData('customer')">Customer</th>
-                            <th class="p-4">Work Detail</th>
+                            <th class="p-4">Description</th>
                             <th class="p-4">Qty</th>
                             <th class="p-4">Amount</th>
-                            <th class="p-4">Received</th>
+                            <th class="p-4">Paid</th>
                             <th class="p-4">Balance</th>
                             <th class="p-4">Ref</th>
-                            <th class="p-4 no-print">Actions</th>
+                            <th class="p-4 no-print">Action</th>
                         </tr>
                     </thead>
                     <tbody id="entries-table-body"></tbody>
@@ -240,25 +240,25 @@
         <div class="flex flex-col md:flex-row justify-between gap-4 mb-4 no-print">
             <div class="flex gap-2">
                 <button onclick="showCustomerModal()" class="bg-sky-600 hover:bg-sky-500 px-6 py-2 rounded font-bold">+ Add New Customer</button>
-                <input type="text" id="search-customers" onkeyup="renderCustomers()" placeholder="Search Name/Ref..." class="bg-slate-800 border border-slate-700 p-2 rounded text-white">
+                <input type="text" id="search-customers" onkeyup="renderCustomers()" placeholder="Search name or ref..." class="bg-slate-800 border border-slate-700 p-2 rounded text-white">
             </div>
-            <button onclick="printReport('summary')" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded font-bold">Print Customer Summary</button>
+            <button onclick="printReport('summary')" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded font-bold">Print Summary</button>
         </div>
 
         <div id="print-area-summary" class="gaming-card rounded-xl overflow-hidden">
             <div class="print-only hidden p-4 text-center border-b border-black mb-4">
                 <h1 class="text-2xl font-bold">ARTIX LASER LEDGER</h1>
-                <p class="text-sm">Customer Receivable Summary</p>
+                <p class="text-sm">Customer Balance Summary</p>
             </div>
             <table class="w-full text-left">
                 <thead class="bg-slate-800 text-slate-400 no-print">
                     <tr>
                         <th class="p-4 cursor-pointer hover:text-white" onclick="sortCustomers('name')">Customer Name</th>
                         <th class="p-4">Reference</th>
-                        <th class="p-4">Total Orders</th>
+                        <th class="p-4">Total Billing</th>
                         <th class="p-4">Total Paid</th>
-                        <th class="p-4">Receivable Amount</th>
-                        <th class="p-4 no-print">Actions</th>
+                        <th class="p-4">Total Balance</th>
+                        <th class="p-4 no-print">Action</th>
                     </tr>
                 </thead>
                 <tbody id="customers-table-body"></tbody>
@@ -266,13 +266,13 @@
         </div>
     </section>
 
-    <!-- Customer Detail Modal / View -->
+    <!-- Customer Detail Modal -->
     <div id="modal-customer-detail" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-slate-900 border border-slate-700 w-full max-w-5xl rounded-2xl max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-800 no-print">
                 <h2 id="detail-customer-name" class="header-font text-2xl text-sky-400">Customer Ledger</h2>
                 <div class="flex gap-2">
-                    <button onclick="printReport('detail')" class="bg-indigo-600 px-4 py-2 rounded">Print This Ledger</button>
+                    <button onclick="printReport('detail')" class="bg-indigo-600 px-4 py-2 rounded text-sm">Print Ledger</button>
                     <button onclick="closeCustomerDetail()" class="text-3xl">&times;</button>
                 </div>
             </div>
@@ -292,11 +292,11 @@
                         <p id="detail-total-paid" class="text-xl font-bold text-emerald-400"></p>
                     </div>
                     <div class="bg-slate-800 p-4 rounded-lg border border-red-500/30 print:border">
-                        <p class="text-xs text-red-400">Receivable</p>
+                        <p class="text-xs text-red-400">Total Balance</p>
                         <p id="detail-total-due" class="text-xl font-bold text-red-400"></p>
                     </div>
                     <div class="bg-slate-800 p-4 rounded-lg print:border">
-                        <p class="text-xs text-slate-400">Total Entries</p>
+                        <p class="text-xs text-slate-400">Entries Count</p>
                         <p id="detail-count" class="text-xl font-bold"></p>
                     </div>
                 </div>
@@ -304,11 +304,11 @@
                     <thead>
                         <tr class="border-b border-slate-700">
                             <th class="pb-2">Date</th>
-                            <th class="pb-2">Work Detail</th>
+                            <th class="pb-2">Description</th>
                             <th class="pb-2">Qty</th>
                             <th class="pb-2">Amount</th>
-                            <th class="pb-2">Rec.</th>
-                            <th class="pb-2">Bal.</th>
+                            <th class="pb-2">Paid</th>
+                            <th class="pb-2">Balance</th>
                         </tr>
                     </thead>
                     <tbody id="detail-table-body"></tbody>
@@ -317,14 +317,14 @@
         </div>
     </div>
 
-    <!-- Add/Edit Customer Modal -->
+    <!-- Customer Form Modal -->
     <div id="modal-customer-form" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-50">
         <div class="bg-slate-900 border border-slate-700 p-8 rounded-2xl w-full max-w-md shadow-2xl">
-            <h2 id="customer-form-title" class="header-font text-2xl mb-6 text-sky-400">ADD CUSTOMER</h2>
+            <h2 id="customer-form-title" class="header-font text-2xl mb-6 text-sky-400">Add Customer</h2>
             <form id="customer-form">
                 <input type="hidden" id="cust-id">
                 <div class="mb-4">
-                    <label class="block text-slate-400 text-sm mb-1">Customer Name</label>
+                    <label class="block text-slate-400 text-sm mb-1">Name</label>
                     <input type="text" id="cust-name" required class="w-full bg-slate-800 border border-slate-700 p-3 rounded text-white outline-none focus:border-sky-500">
                 </div>
                 <div class="mb-4">
@@ -332,7 +332,7 @@
                     <input type="text" id="cust-ref" value="Direct" class="w-full bg-slate-800 border border-slate-700 p-3 rounded text-white outline-none focus:border-sky-500">
                 </div>
                 <div class="mb-6">
-                    <label class="block text-slate-400 text-sm mb-1">Identification Color</label>
+                    <label class="block text-slate-400 text-sm mb-1">Theme Color</label>
                     <input type="color" id="cust-color" value="#38bdf8" class="w-full h-12 bg-slate-800 border border-slate-700 p-1 rounded cursor-pointer">
                 </div>
                 <div class="flex gap-4">
@@ -374,7 +374,6 @@
             }
         }
 
-        // --- Tab Switching ---
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -383,7 +382,6 @@
             renderAll();
         }
 
-        // --- Data Handling ---
         function saveToStorage() {
             localStorage.setItem('artix_entries', JSON.stringify(entries));
             localStorage.setItem('artix_customers', JSON.stringify(customers));
@@ -391,6 +389,7 @@
 
         function populateCustomerDropdowns() {
             const select = document.getElementById('entry-customer');
+            if(!select) return;
             select.innerHTML = '<option value="">Select Customer</option>';
             customers.sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
                 const opt = document.createElement('option');
@@ -400,12 +399,12 @@
             });
         }
 
-        // --- Form Submissions ---
+        // --- Form Submission ---
         document.getElementById('customer-form').onsubmit = (e) => {
             e.preventDefault();
             const id = document.getElementById('cust-id').value;
-            const name = document.getElementById('cust-name').value;
-            const ref = document.getElementById('cust-ref').value || 'Direct';
+            const name = document.getElementById('cust-name').value.trim();
+            const ref = document.getElementById('cust-ref').value.trim() || 'Direct';
             const color = document.getElementById('cust-color').value;
 
             if (id) {
@@ -458,7 +457,8 @@
         // --- Rendering ---
         function getDayName(dateStr) {
             const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            return days[new Date(dateStr).getDay()];
+            const date = new Date(dateStr);
+            return isNaN(date) ? "" : days[date.getDay()];
         }
 
         function renderAll() {
@@ -492,7 +492,6 @@
                 return matchMonth && matchYear && matchSearch;
             });
 
-            // Sorting logic
             filtered.sort((a, b) => {
                 let valA = a[currentSort.key];
                 let valB = b[currentSort.key];
@@ -505,6 +504,7 @@
             });
 
             const tbody = document.getElementById('entries-table-body');
+            if(!tbody) return;
             tbody.innerHTML = '';
 
             filtered.forEach(e => {
@@ -513,7 +513,7 @@
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-slate-800 hover:bg-slate-800/50 transition";
                 tr.innerHTML = `
-                    <td class="p-4"><span class="text-xs text-slate-500 block">${getDayName(e.date)}</span>${e.date}</td>
+                    <td class="p-4"><span class="text-[10px] text-slate-500 block">${getDayName(e.date)}</span>${e.date}</td>
                     <td class="p-4"><span class="color-dot" style="background:${cust.color}"></span>${cust.name}</td>
                     <td class="p-4">${e.work} <br><span class="text-xs text-slate-500">${e.notes || ''}</span></td>
                     <td class="p-4">${e.qty} ${e.unit}</td>
@@ -522,8 +522,8 @@
                     <td class="p-4 ${balance > 0 ? 'text-orange-400' : 'text-sky-400'}">PKR ${balance.toLocaleString()}</td>
                     <td class="p-4 text-xs">${e.ref || 'Direct'}</td>
                     <td class="p-4 no-print">
-                        <button onclick="editEntry('${e.id}')" class="text-sky-400 mr-2">Edit</button>
-                        <button onclick="deleteEntry('${e.id}')" class="text-red-400">Del</button>
+                        <button onclick="editEntry('${e.id}')" class="text-sky-400 mr-2 text-xs">Edit</button>
+                        <button onclick="deleteEntry('${e.id}')" class="text-red-400 text-xs">Delete</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -551,6 +551,7 @@
             });
 
             const tbody = document.getElementById('customers-table-body');
+            if(!tbody) return;
             tbody.innerHTML = '';
 
             summary.forEach(s => {
@@ -566,8 +567,8 @@
                     <td class="p-4 text-emerald-400 font-bold">PKR ${s.totalPaid.toLocaleString()}</td>
                     <td class="p-4 text-red-400 font-bold">PKR ${s.balance.toLocaleString()}</td>
                     <td class="p-4 no-print">
-                        <button onclick="event.stopPropagation(); editCustomer('${s.id}')" class="text-sky-400 mr-2">Edit</button>
-                        <button onclick="event.stopPropagation(); deleteCustomer('${s.id}')" class="text-red-400">Delete</button>
+                        <button onclick="event.stopPropagation(); editCustomer('${s.id}')" class="text-sky-400 mr-2 text-xs">Edit</button>
+                        <button onclick="event.stopPropagation(); deleteCustomer('${s.id}')" class="text-red-400 text-xs">Delete</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -602,7 +603,7 @@
         }
 
         function deleteCustomer(id) {
-            if (confirm("Deleting a customer will not delete their entries, but they will be 'Unknown'. Continue?")) {
+            if (confirm("Deleting customer will keep their records as 'Unknown'. Continue?")) {
                 customers = customers.filter(c => c.id !== id);
                 saveToStorage();
                 populateCustomerDropdowns();
@@ -616,7 +617,7 @@
             document.getElementById('cust-name').value = c.name;
             document.getElementById('cust-ref').value = c.ref;
             document.getElementById('cust-color').value = c.color;
-            document.getElementById('customer-form-title').textContent = "EDIT CUSTOMER";
+            document.getElementById('customer-form-title').textContent = "Edit Customer";
             showCustomerModal();
         }
 
@@ -628,7 +629,7 @@
             document.getElementById('modal-customer-form').classList.add('hidden');
             document.getElementById('customer-form').reset();
             document.getElementById('cust-id').value = "";
-            document.getElementById('customer-form-title').textContent = "ADD CUSTOMER";
+            document.getElementById('customer-form-title').textContent = "Add Customer";
         }
 
         function showCustomerDetail(custId) {
@@ -702,16 +703,12 @@
             const monthName = monthVal !== "" ? document.getElementById('filter-month').options[document.getElementById('filter-month').selectedIndex].text : "All Time";
             
             if(type === 'entries') {
-                document.getElementById('print-month-display').textContent = `Month: ${monthName}`;
-                window.print();
-            } else if(type === 'summary') {
-                window.print();
-            } else if(type === 'detail') {
-                window.print();
+                document.getElementById('print-month-display').textContent = `Period: ${monthName}`;
             }
+            window.print();
         }
 
-        // --- Excel & Backup ---
+        // --- Excel and Backup ---
         function downloadSampleExcel() {
             const data = [
                 ['Date', 'CustomerName', 'Reference', 'WorkDetail', 'Qty', 'Unit', 'Amount', 'Received', 'Remarks'],
@@ -726,52 +723,72 @@
 
         function handleExcel(event) {
             const file = event.target.files[0];
-            if (!file) return; // Fix for "parameter 1 is not of type 'Blob'"
+            if (!file) return;
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+
+                    if (jsonData.length === 0) {
+                        alert("Excel file is empty.");
+                        return;
+                    }
 
                     jsonData.forEach(row => {
-                        let cust = customers.find(c => c.name.toLowerCase() === (row.CustomerName || "").toString().toLowerCase());
-                        if (!cust && row.CustomerName) {
+                        const getVal = (keys) => {
+                            const foundKey = Object.keys(row).find(rk => keys.includes(rk.toLowerCase().trim()));
+                            return foundKey ? row[foundKey] : "";
+                        };
+
+                        const cName = getVal(['customername', 'customer', 'name']).toString().trim();
+                        if (!cName) return;
+
+                        let cust = customers.find(c => c.name.toLowerCase() === cName.toLowerCase());
+                        if (!cust) {
                             cust = { 
-                                id: Date.now().toString() + Math.random(), 
-                                name: row.CustomerName.toString(), 
-                                ref: row.Reference || 'Direct', 
+                                id: 'c' + Date.now().toString() + Math.random().toString(36).substr(2, 5), 
+                                name: cName, 
+                                ref: getVal(['reference', 'ref']) || 'Direct', 
                                 color: '#'+Math.floor(Math.random()*16777215).toString(16) 
                             };
                             customers.push(cust);
                         }
 
-                        if (cust) {
-                            entries.push({
-                                id: Date.now().toString() + Math.random(),
-                                date: row.Date || new Date().toISOString().split('T')[0],
-                                customerId: cust.id,
-                                ref: row.Reference || 'Direct',
-                                work: row.WorkDetail || '',
-                                qty: row.Qty || 0,
-                                unit: row.Unit || 'pcs',
-                                amount: row.Amount || 0,
-                                received: row.Received || 0,
-                                notes: row.Remarks || ''
-                            });
+                        let rawDate = getVal(['date']);
+                        let formattedDate = new Date().toISOString().split('T')[0];
+                        if (rawDate) {
+                            const d = new Date(rawDate);
+                            if (!isNaN(d.getTime())) {
+                                formattedDate = d.toISOString().split('T')[0];
+                            }
                         }
+
+                        entries.push({
+                            id: 'e' + Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                            date: formattedDate,
+                            customerId: cust.id,
+                            ref: getVal(['reference', 'ref']) || 'Direct',
+                            work: getVal(['workdetail', 'work', 'detail']) || 'No Detail',
+                            qty: parseFloat(getVal(['qty', 'quantity'])) || 0,
+                            unit: getVal(['unit']) || 'pcs',
+                            amount: parseFloat(getVal(['amount', 'total'])) || 0,
+                            received: parseFloat(getVal(['received', 'paid'])) || 0,
+                            notes: getVal(['remarks', 'notes', 'note']) || ''
+                        });
                     });
+
                     saveToStorage();
                     populateCustomerDropdowns();
                     renderAll();
-                    alert("Imported successfully!");
+                    alert("Data imported successfully!");
                 } catch (err) {
-                    console.error(err);
-                    alert("Error reading Excel file.");
+                    console.error("Excel Read Error:", err);
+                    alert("Error reading Excel file. Please check sample file.");
                 }
-                // Clear input
                 event.target.value = "";
             };
             reader.readAsArrayBuffer(file);
@@ -801,7 +818,7 @@
                         saveToStorage();
                         populateCustomerDropdowns();
                         renderAll();
-                        alert("Backup restored!");
+                        alert("Backup restored successfully!");
                     }
                 } catch(err) {
                     alert("Invalid backup file.");
