@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artix Laser Ledger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Ubuntu:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gaming-neon: #00f2ff;
+            --gaming-purple: #7000ff;
+            --gaming-dark: #0a0a0c;
+            --gaming-card: #16161e;
+        }
+
+        body {
+            background-color: var(--gaming-dark);
+            color: #e2e2e2;
+            font-family: 'Ubuntu', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+
+        .glass-card {
+            background: rgba(22, 22, 30, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 242, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .neon-border:hover {
+            border-color: var(--gaming-neon);
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+        }
+
+        .btn-gaming {
+            background: linear-gradient(45deg, var(--gaming-purple), var(--gaming-neon));
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .btn-gaming:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 242, 255, 0.4);
+        }
+
+        /* Print Settings */
+        @media print {
+            body { background: white !important; color: black !important; font-family: 'Ubuntu', sans-serif !important; }
+            .no-print { display: none !important; }
+            .glass-card { border: none !important; box-shadow: none !important; background: transparent !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #ddd !important; padding: 8px !important; color: black !important; font-size: 10pt !important; }
+            .paid-text { color: green !important; font-weight: bold !important; }
+            .due-text { color: red !important; font-weight: bold !important; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 20px; }
+            .print-title { font-size: 24pt; font-weight: bold; border-bottom: 2px solid black; padding-bottom: 5px; }
+        }
+
+        .print-header { display: none; }
+
+        .paid-text { color: #4ade80; }
+        .due-text { color: #f87171; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--gaming-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--gaming-purple); border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="app" class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 no-print">
+            <h1 class="orbitron text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500 mb-4 md:mb-0">
+                Artix Laser Ledger
+            </h1>
+            <div class="flex gap-3">
+                <button onclick="exportBackup()" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded text-xs border border-gray-600 transition">Backup</button>
+                <button onclick="document.getElementById('restoreInput').click()" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded text-xs border border-gray-600 transition">Restore</button>
+                <input type="file" id="restoreInput" class="hidden" onchange="importBackup(event)">
+            </div>
+        </header>
+
+        <!-- Main Dashboard View -->
+        <div id="mainView">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 no-print">
+                <!-- Add Record Form -->
+                <div class="lg:col-span-1 glass-card p-6 border-l-4 border-cyan-500">
+                    <h2 class="orbitron text-xl mb-4 text-cyan-400">New Entry</h2>
+                    <form id="recordForm" class="space-y-4">
+                        <input type="hidden" id="editId">
+                        <div>
+                            <label class="block text-xs mb-1">Customer Name</label>
+                            <input list="customerList" id="customerName" required class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 focus:border-cyan-500 outline-none">
+                            <datalist id="customerList"></datalist>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs mb-1">Reference</label>
+                                <input id="reference" placeholder="Contact/ID" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs mb-1">Date</label>
+                                <input type="date" id="entryDate" required class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 outline-none">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs mb-1">Quantity</label>
+                                <input type="number" id="quantity" step="0.01" value="1" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs mb-1">Unit</label>
+                                <select id="unit" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 outline-none">
+                                    <option value="Sheets">Sheets</option>
+                                    <option value="Pcs">Pcs</option>
+                                    <option value="Box">Box</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs mb-1">Work Details</label>
+                            <textarea id="workDetail" placeholder="Description of work" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 h-20 outline-none"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs mb-1 font-bold text-red-400">Total Amount (PKR)</label>
+                                <input type="number" id="amount" required class="w-full bg-gray-900 border border-red-900 rounded px-3 py-2 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs mb-1 font-bold text-green-400">Received (PKR)</label>
+                                <input type="number" id="received" value="0" class="w-full bg-gray-900 border border-green-900 rounded px-3 py-2 outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs mb-1">Remarks / Note</label>
+                            <input id="remarks" placeholder="Optional notes" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 outline-none">
+                        </div>
+                        <button type="submit" class="w-full btn-gaming py-3 rounded-lg mt-2">Save Record</button>
+                    </form>
+                </div>
+
+                <!-- Summary & Management -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Filters & Stats -->
+                    <div class="glass-card p-4 flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex gap-2">
+                            <select id="filterMonth" onchange="renderAll()" class="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm">
+                                <option value="All">All Months</option>
+                                <option value="01">January</option><option value="02">February</option><option value="03">March</option>
+                                <option value="04">April</option><option value="05">May</option><option value="06">June</option>
+                                <option value="07">July</option><option value="08">August</option><option value="09">September</option>
+                                <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+                            </select>
+                            <select id="filterYear" onchange="renderAll()" class="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm">
+                                <option value="All">All Years</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="downloadSampleExcel()" class="text-xs text-cyan-400 hover:underline">Sample Excel</button>
+                            <button onclick="document.getElementById('excelInput').click()" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-xs">Import Excel</button>
+                            <input type="file" id="excelInput" class="hidden" accept=".xlsx, .xls" onchange="handleExcelImport(event)">
+                            <button onclick="printSummary()" class="bg-white text-black px-4 py-1 rounded text-xs font-bold hover:bg-gray-200">Print Summary</button>
+                        </div>
+                    </div>
+
+                    <!-- Customer Summary Table -->
+                    <div class="glass-card p-6 overflow-hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="orbitron text-xl text-purple-400">Customer Summary</h2>
+                            <input type="text" id="searchCustomer" oninput="renderAll()" placeholder="Search customer..." class="bg-gray-900 border border-gray-700 rounded px-3 py-1 text-sm outline-none w-1/3">
+                        </div>
+                        <div class="overflow-x-auto max-h-[400px]">
+                            <table class="w-full text-left text-sm" id="summaryTable">
+                                <thead class="sticky top-0 bg-gray-800">
+                                    <tr>
+                                        <th class="p-3 cursor-pointer" onclick="sortSummary('name')">Customer (Ref) ↕</th>
+                                        <th class="p-3">Total Billed</th>
+                                        <th class="p-3">Total Paid</th>
+                                        <th class="p-3 cursor-pointer text-red-400" onclick="sortSummary('balance')">Payable ↕</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="summaryBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Transactions -->
+            <div class="glass-card p-6 mt-8 no-print">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="orbitron text-xl text-cyan-400">All Work Records</h2>
+                    <button onclick="printTable('workRecordsArea')" class="bg-white text-black px-4 py-1 rounded text-xs font-bold">Print Filtered Records</button>
+                </div>
+                <div class="overflow-x-auto" id="workRecordsArea">
+                    <div class="print-header">
+                        <div class="print-title">Artix Laser Ledger</div>
+                        <p id="printMonthLabel"></p>
+                    </div>
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-gray-800 border-b border-gray-700">
+                                <th class="p-3">Date (Day)</th>
+                                <th class="p-3">Customer</th>
+                                <th class="p-3">Work Detail</th>
+                                <th class="p-3 text-right">Qty</th>
+                                <th class="p-3 text-right">Amount</th>
+                                <th class="p-3 text-right">Recv</th>
+                                <th class="p-3 text-right">Balance</th>
+                                <th class="p-3 no-print">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Single Customer Ledger View (Modal-like) -->
+        <div id="ledgerView" class="hidden">
+            <div class="no-print mb-6">
+                <button onclick="closeLedger()" class="bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-600">← Back to Dashboard</button>
+            </div>
+            <div id="customerLedgerArea" class="glass-card p-8">
+                <div class="print-header">
+                    <div class="print-title">Artix Laser Ledger</div>
+                    <h2 id="ledgerCustomerName" class="text-2xl mt-4">Customer: </h2>
+                    <p id="ledgerReference" class="text-gray-600"></p>
+                </div>
+                <div class="flex flex-col md:flex-row justify-between items-end border-b border-gray-700 pb-4 mb-6">
+                    <div>
+                        <h2 id="viewTitle" class="orbitron text-2xl text-cyan-400">Ledger Statement</h2>
+                        <p id="viewCustName" class="text-xl font-bold"></p>
+                        <p id="viewCustRef" class="text-sm opacity-60"></p>
+                    </div>
+                    <div class="text-right mt-4 md:mt-0">
+                        <button onclick="printTable('customerLedgerArea')" class="no-print bg-white text-black px-6 py-2 rounded-lg font-bold mb-2">Print Statement</button>
+                        <div class="text-sm">Total Balance: <span id="viewTotalBalance" class="text-xl font-bold text-red-400">PKR 0</span></div>
+                    </div>
+                </div>
+                <table class="w-full text-sm text-left">
+                    <thead>
+                        <tr class="bg-gray-800 text-white">
+                            <th class="p-3 border">Date</th>
+                            <th class="p-3 border">Description</th>
+                            <th class="p-3 border text-right">Qty</th>
+                            <th class="p-3 border text-right">Debit</th>
+                            <th class="p-3 border text-right">Credit</th>
+                            <th class="p-3 border text-right">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerBody"></tbody>
+                </table>
+                <div class="mt-8 text-center text-xs opacity-40">Generated by Artix Laser Ledger</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let records = JSON.parse(localStorage.getItem('artix_records')) || [];
+        let customers = JSON.parse(localStorage.getItem('artix_customers')) || {};
+        let summarySortMode = { key: '', asc: true };
+
+        const form = document.getElementById('recordForm');
+        
+        // Auto Date initialization
+        document.getElementById('entryDate').valueAsDate = new Date();
+
+        function saveToStorage() {
+            localStorage.setItem('artix_records', JSON.stringify(records));
+            localStorage.setItem('artix_customers', JSON.stringify(customers));
+        }
+
+        function getDayName(dateStr) {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const d = new Date(dateStr);
+            return days[d.getDay()];
+        }
+
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('editId').value;
+            const name = document.getElementById('customerName').value;
+            const date = document.getElementById('entryDate').value;
+            const ref = document.getElementById('reference').value;
+            
+            const record = {
+                id: editId || Date.now().toString(),
+                name: name,
+                reference: ref,
+                date: date,
+                day: getDayName(date),
+                workDetail: document.getElementById('workDetail').value,
+                quantity: parseFloat(document.getElementById('quantity').value) || 0,
+                unit: document.getElementById('unit').value,
+                amount: parseFloat(document.getElementById('amount').value) || 0,
+                received: parseFloat(document.getElementById('received').value) || 0,
+                remarks: document.getElementById('remarks').value
+            };
+
+            // Maintain unique color per customer
+            if (!customers[name]) {
+                const colors = ['#00f2ff', '#7000ff', '#f87171', '#fbbf24', '#4ade80', '#c084fc', '#2dd4bf'];
+                customers[name] = {
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    reference: ref
+                };
+            } else {
+                customers[name].reference = ref; // Update ref if changed
+            }
+
+            if (editId) {
+                const idx = records.findIndex(r => r.id === editId);
+                records[idx] = record;
+                document.getElementById('editId').value = "";
+            } else {
+                records.push(record);
+            }
+
+            saveToStorage();
+            form.reset();
+            document.getElementById('entryDate').valueAsDate = new Date();
+            renderAll();
+        };
+
+        function deleteRecord(id) {
+            if (confirm('Delete this record?')) {
+                records = records.filter(r => r.id !== id);
+                saveToStorage();
+                renderAll();
+            }
+        }
+
+        function editRecord(id) {
+            const r = records.find(rec => rec.id === id);
+            document.getElementById('editId').value = r.id;
+            document.getElementById('customerName').value = r.name;
+            document.getElementById('reference').value = r.reference;
+            document.getElementById('entryDate').value = r.date;
+            document.getElementById('workDetail').value = r.workDetail;
+            document.getElementById('quantity').value = r.quantity;
+            document.getElementById('unit').value = r.unit;
+            document.getElementById('amount').value = r.amount;
+            document.getElementById('received').value = r.received;
+            document.getElementById('remarks').value = r.remarks;
+            window.scrollTo(0, 0);
+        }
+
+        function renderAll() {
+            renderSummary();
+            renderRecords();
+            updateDataList();
+        }
+
+        function updateDataList() {
+            const dl = document.getElementById('customerList');
+            dl.innerHTML = '';
+            const names = [...new Set(records.map(r => r.name))];
+            names.forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n;
+                dl.appendChild(opt);
+            });
+        }
+
+        function renderSummary() {
+            const search = document.getElementById('searchCustomer').value.toLowerCase();
+            const summary = {};
+
+            records.forEach(r => {
+                if (!summary[r.name]) {
+                    summary[r.name] = { billed: 0, paid: 0, ref: r.reference };
+                }
+                summary[r.name].billed += r.amount;
+                summary[r.name].paid += r.received;
+            });
+
+            let sortedNames = Object.keys(summary).filter(n => n.toLowerCase().includes(search));
+
+            if (summarySortMode.key === 'name') {
+                sortedNames.sort((a, b) => summarySortMode.asc ? a.localeCompare(b) : b.localeCompare(a));
+            } else if (summarySortMode.key === 'balance') {
+                sortedNames.sort((a, b) => {
+                    const balA = summary[a].billed - summary[a].paid;
+                    const balB = summary[b].billed - summary[b].paid;
+                    return summarySortMode.asc ? balA - balB : balB - balA;
+                });
+            }
+
+            const body = document.getElementById('summaryBody');
+            body.innerHTML = '';
+
+            sortedNames.forEach(name => {
+                const s = summary[name];
+                const bal = s.billed - s.paid;
+                const row = document.createElement('tr');
+                row.className = "border-b border-gray-800 hover:bg-gray-800 transition cursor-pointer";
+                row.innerHTML = `
+                    <td class="p-3" onclick="openLedger('${name}')">
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 rounded-full mr-2" style="background:${customers[name]?.color}"></span>
+                            <div>
+                                <div class="font-bold text-cyan-400">${name}</div>
+                                <div class="text-[10px] opacity-50">${s.ref || 'No Ref'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-3">PKR ${s.billed.toLocaleString()}</td>
+                    <td class="p-3">PKR ${s.paid.toLocaleString()}</td>
+                    <td class="p-3 font-bold ${bal > 0 ? 'text-red-400' : 'text-green-400'}">PKR ${bal.toLocaleString()}</td>
+                `;
+                body.appendChild(row);
+            });
+        }
+
+        function renderRecords() {
+            const month = document.getElementById('filterMonth').value;
+            const year = document.getElementById('filterYear').value;
+            const body = document.getElementById('recordsBody');
+            
+            // Set print header month
+            const monthText = month === 'All' ? 'All Time' : document.querySelector(`#filterMonth option[value="${month}"]`).text;
+            document.getElementById('printMonthLabel').innerText = `Report Month: ${monthText} ${year === 'All' ? '' : year}`;
+
+            body.innerHTML = '';
+
+            const filtered = records.filter(r => {
+                const [rYear, rMonth] = r.date.split('-');
+                const mMatch = month === 'All' || rMonth === month;
+                const yMatch = year === 'All' || rYear === year;
+                return mMatch && yMatch;
+            }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            filtered.forEach(r => {
+                const bal = r.amount - r.received;
+                const row = document.createElement('tr');
+                row.className = "border-b border-gray-800 hover:bg-gray-900 transition";
+                row.innerHTML = `
+                    <td class="p-3">${r.date}<br><span class="text-[10px] opacity-60">${r.day}</span></td>
+                    <td class="p-3 font-bold" style="color:${customers[r.name]?.color}">${r.name}</td>
+                    <td class="p-3">
+                        <div class="max-w-[200px] truncate">${r.workDetail}</div>
+                        <div class="text-[10px] opacity-50 italic">${r.remarks}</div>
+                    </td>
+                    <td class="p-3 text-right">${r.quantity} ${r.unit}</td>
+                    <td class="p-3 text-right font-bold paid-text">PKR ${r.amount.toLocaleString()}</td>
+                    <td class="p-3 text-right font-bold due-text">PKR ${r.received.toLocaleString()}</td>
+                    <td class="p-3 text-right font-bold ${bal > 0 ? 'text-red-400' : 'text-green-400'}">PKR ${bal.toLocaleString()}</td>
+                    <td class="p-3 text-right no-print">
+                        <button onclick="editRecord('${r.id}')" class="text-blue-400 mr-2">Edit</button>
+                        <button onclick="deleteRecord('${r.id}')" class="text-red-400">Del</button>
+                    </td>
+                `;
+                body.appendChild(row);
+            });
+        }
+
+        function sortSummary(key) {
+            if (summarySortMode.key === key) summarySortMode.asc = !summarySortMode.asc;
+            else { summarySortMode.key = key; summarySortMode.asc = true; }
+            renderSummary();
+        }
+
+        function openLedger(name) {
+            const ledgerView = document.getElementById('ledgerView');
+            const mainView = document.getElementById('mainView');
+            const custRecords = records.filter(r => r.name === name).sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            document.getElementById('viewCustName').innerText = name;
+            document.getElementById('ledgerCustomerName').innerText = "Customer: " + name;
+            document.getElementById('viewCustRef').innerText = "Ref: " + (customers[name]?.reference || "N/A");
+            document.getElementById('ledgerReference').innerText = "Ref: " + (customers[name]?.reference || "N/A");
+
+            const body = document.getElementById('ledgerBody');
+            body.innerHTML = '';
+            let runningBal = 0;
+
+            custRecords.forEach(r => {
+                runningBal += (r.amount - r.received);
+                const row = document.createElement('tr');
+                row.className = "border";
+                row.innerHTML = `
+                    <td class="p-2 border text-black">${r.date}</td>
+                    <td class="p-2 border text-black">${r.workDetail} (${r.quantity} ${r.unit})</td>
+                    <td class="p-2 border text-right text-black">${r.amount > 0 ? r.amount.toLocaleString() : '-'}</td>
+                    <td class="p-2 border text-right text-black">${r.received > 0 ? r.received.toLocaleString() : '-'}</td>
+                    <td class="p-2 border text-right font-bold text-black">${runningBal.toLocaleString()}</td>
+                `;
+                body.appendChild(row);
+            });
+
+            document.getElementById('viewTotalBalance').innerText = `PKR ${runningBal.toLocaleString()}`;
+            
+            mainView.classList.add('hidden');
+            ledgerView.classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function closeLedger() {
+            document.getElementById('ledgerView').classList.add('hidden');
+            document.getElementById('mainView').classList.remove('hidden');
+        }
+
+        function printTable(id) {
+            window.print();
+        }
+
+        function printSummary() {
+            // Temporarily hide parts of page to print only summary
+            const originalBody = document.body.innerHTML;
+            const summaryHTML = document.getElementById('summaryTable').outerHTML;
+            const printContent = `
+                <div class="print-header" style="display:block">
+                    <div class="print-title">Artix Laser Ledger</div>
+                    <h2>Customer Outstanding Summary</h2>
+                    <p>Generated Date: ${new Date().toLocaleDateString()}</p>
+                </div>
+                ${summaryHTML}
+            `;
+            
+            // This is a cleaner way for this specific app
+            const style = document.createElement('style');
+            style.innerHTML = `@media print { body * { visibility: hidden; } #summaryTable, #summaryTable *, .print-header, .print-header * { visibility: visible; } .print-header { position: absolute; top:0; left:0; width:100%; } #summaryTable { position: absolute; top:100px; left:0; width:100%; } }`;
+            document.head.appendChild(style);
+            window.print();
+            document.head.removeChild(style);
+        }
+
+        // Excel Handling
+        function downloadSampleExcel() {
+            const data = [
+                ["Date", "Customer", "Reference", "WorkDetail", "Quantity", "Unit", "Amount", "Received", "Remarks"],
+                ["2025-01-25", "Ali Raza", "0300-1234567", "Laser Cutting Wood", 10, "Sheets", 5000, 2000, "Urgent"],
+                ["2025-01-26", "Zain Traders", "LHR-01", "Acrylic Sheet Blue", 5, "Pcs", 3000, 3000, "Paid"]
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+            XLSX.writeFile(wb, "Artix_Sample_Sheet.xlsx");
+        }
+
+        function handleExcelImport(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+                rows.forEach(row => {
+                    const date = row.Date || new Date().toISOString().split('T')[0];
+                    records.push({
+                        id: Date.now().toString() + Math.random(),
+                        name: row.Customer || 'Unknown',
+                        reference: row.Reference || '',
+                        date: date,
+                        day: getDayName(date),
+                        workDetail: row.WorkDetail || '',
+                        quantity: parseFloat(row.Quantity) || 1,
+                        unit: row.Unit || 'Pcs',
+                        amount: parseFloat(row.Amount) || 0,
+                        received: parseFloat(row.Received) || 0,
+                        remarks: row.Remarks || ''
+                    });
+                });
+                saveToStorage();
+                renderAll();
+                alert('Data Imported Successfully!');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Backup & Restore
+        function exportBackup() {
+            const data = { records, customers };
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Artix_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+
+        function importBackup(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if(data.records) records = data.records;
+                    if(data.customers) customers = data.customers;
+                    saveToStorage();
+                    renderAll();
+                    alert('Backup Restored Successfully!');
+                } catch(err) {
+                    alert('Invalid Backup File');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Initial Load
+        renderAll();
+    </script>
+</body>
+</html>
