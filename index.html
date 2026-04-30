@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Ledger Pro - Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+        }
+
+        .active-tab {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-bottom: 2px solid #2563eb;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; margin: 0; }
+            .card-shadow { box-shadow: none !important; border: 1px solid #eee !important; }
+            table { width: 100% !important; border-collapse: collapse; }
+            th, td { border: 1px solid #e2e8f0 !important; padding: 8px !important; }
+            .print-header { display: flex !important; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        }
+
+        .print-header { display: none; }
+        
+        select.sort-trigger {
+            background-image: none;
+            appearance: none;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Navigation -->
+    <nav class="bg-white border-b sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-book-open text-blue-600 text-2xl mr-2"></i>
+                    <span class="text-xl font-bold text-slate-900 tracking-tight">LedgerPro <span class="text-xs font-normal text-slate-400">(PKR)</span></span>
+                </div>
+                <div class="flex space-x-1 sm:space-x-4 items-center overflow-x-auto">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-3 py-5 text-sm font-medium transition-all active-tab whitespace-nowrap">
+                        <i class="fas fa-chart-line mr-1"></i> Dashboard
+                    </button>
+                    <button onclick="switchTab('customers')" id="tab-customers" class="px-3 py-5 text-sm font-medium transition-all text-slate-500 hover:text-blue-600 whitespace-nowrap">
+                        <i class="fas fa-users mr-1"></i> Customers
+                    </button>
+                    <button onclick="switchTab('entries')" id="tab-entries" class="px-3 py-5 text-sm font-medium transition-all text-slate-500 hover:text-blue-600 whitespace-nowrap">
+                        <i class="fas fa-history mr-1"></i> Records
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Print Header -->
+    <div class="print-header px-4">
+        <div>
+            <h1 class="text-2xl font-bold">Business Ledger Report</h1>
+            <p id="print-date" class="text-sm text-gray-600"></p>
+        </div>
+        <div class="text-right">
+            <h2 id="print-report-title" class="text-xl font-bold">General Report</h2>
+            <p id="print-customer-info" class="text-sm text-gray-600"></p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Dashboard Section -->
+        <section id="sect-dashboard" class="space-y-6">
+            <!-- Stats & Backup Controls -->
+            <div class="flex flex-wrap items-center justify-between gap-4 no-print mb-2">
+                <div class="flex gap-2">
+                    <button onclick="exportFullBackup()" class="text-xs bg-slate-800 text-white px-3 py-1.5 rounded-lg hover:bg-slate-900 flex items-center gap-2 transition-all">
+                        <i class="fas fa-file-export"></i> Backup All Data
+                    </button>
+                    <label class="text-xs bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-all">
+                        <i class="fas fa-file-import"></i> Restore Backup
+                        <input type="file" id="restore-input" class="hidden" accept=".json" onchange="importFullBackup(event)">
+                    </label>
+                </div>
+                <div class="text-[10px] text-slate-400 font-medium italic">Data is stored locally in your browser.</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 no-print">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-shadow">
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Amount</p>
+                    <h3 class="text-3xl font-bold mt-1" id="stat-total">0.00</h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-shadow">
+                    <p class="text-sm font-medium text-emerald-600 uppercase tracking-wider">Paid Amount</p>
+                    <h3 class="text-3xl font-bold mt-1 text-emerald-600" id="stat-paid">0.00</h3>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-shadow">
+                    <p class="text-sm font-medium text-rose-500 uppercase tracking-wider">Total Balance</p>
+                    <h3 class="text-3xl font-bold mt-1 text-rose-500" id="stat-balance">0.00</h3>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden card-shadow">
+                <div class="px-6 py-4 border-b bg-slate-50 flex flex-wrap justify-between items-center gap-4 no-print">
+                    <h2 class="font-bold text-lg text-slate-700 underline decoration-blue-500 decoration-2">Customer Summary</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Search -->
+                        <div class="relative w-full sm:w-48">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="dash-search" oninput="renderDashboard()" placeholder="Search..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <!-- Sort Summary -->
+                        <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-600">
+                            <i class="fas fa-sort-amount-down text-blue-500"></i>
+                            <select id="dash-sort" onchange="renderDashboard()" class="bg-transparent border-none outline-none font-medium cursor-pointer">
+                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="name-desc">Name (Z-A)</option>
+                                <option value="balance-desc">Balance (High-Low)</option>
+                                <option value="total-desc">Total Bill (High-Low)</option>
+                            </select>
+                        </div>
+                        <button onclick="printSummary()" class="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl text-slate-600 transition-colors shadow-sm">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left min-w-[600px]">
+                        <thead>
+                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-wider bg-slate-50/50">
+                                <th class="px-6 py-4 border-b">Customer Name</th>
+                                <th class="px-6 py-4 border-b text-right">Total Bill</th>
+                                <th class="px-6 py-4 border-b text-right">Paid</th>
+                                <th class="px-6 py-4 border-b text-right">Balance</th>
+                                <th class="px-6 py-4 border-b text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-list" class="divide-y divide-slate-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Customers Section -->
+        <section id="sect-customers" class="hidden space-y-6">
+            <div class="flex justify-between items-center no-print">
+                <h2 class="text-2xl font-bold text-slate-800">Manage Customers</h2>
+                <button onclick="openCustomerModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-200">
+                    <i class="fas fa-plus"></i> New Customer
+                </button>
+            </div>
+            <div id="customer-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 no-print"></div>
+        </section>
+
+        <!-- Entries Section -->
+        <section id="sect-entries" class="hidden space-y-6">
+            <div class="flex flex-wrap justify-between items-center gap-4 no-print">
+                <h2 class="text-2xl font-bold text-slate-800">Work Records</h2>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <!-- Sort Records -->
+                    <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-600 h-[42px]">
+                        <i class="fas fa-filter text-blue-500"></i>
+                        <select id="entry-sort" onchange="renderEntries()" class="bg-transparent border-none outline-none font-medium cursor-pointer">
+                            <option value="date-desc">Newest First</option>
+                            <option value="date-asc">Oldest First</option>
+                            <option value="name-asc">Customer (A-Z)</option>
+                            <option value="amount-desc">Amount (High-Low)</option>
+                        </select>
+                    </div>
+                    <button onclick="downloadSampleExcel()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-xl flex items-center gap-2 transition-all text-sm font-medium h-[42px]">
+                        <i class="fas fa-download text-blue-500"></i> Sample
+                    </button>
+                    <label class="cursor-pointer bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-xl flex items-center gap-2 transition-all border border-emerald-200 text-sm font-medium h-[42px]">
+                        <i class="fas fa-file-excel"></i> Import
+                        <input type="file" id="excel-import" class="hidden" accept=".xlsx, .xls, .csv" onchange="handleExcelImport(event)">
+                    </label>
+                    <button onclick="printAllEntries()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl flex items-center gap-2 transition-all text-sm font-medium h-[42px]">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button onclick="openEntryModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-200 text-sm font-medium h-[42px]">
+                        <i class="fas fa-plus"></i> New Entry
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden card-shadow">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left min-w-[1000px]">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                                <th class="px-6 py-4 border-b">Date & Day</th>
+                                <th class="px-6 py-4 border-b">Customer / Ref</th>
+                                <th class="px-6 py-4 border-b">Quantity</th>
+                                <th class="px-6 py-4 border-b">Work Details</th>
+                                <th class="px-6 py-4 border-b text-right">Total PKR</th>
+                                <th class="px-6 py-4 border-b text-right text-emerald-600">Paid</th>
+                                <th class="px-6 py-4 border-b text-right text-rose-500">Balance</th>
+                                <th class="px-6 py-4 border-b text-right no-print">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="entry-list" class="divide-y divide-slate-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div id="modal-customer" class="modal flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="cust-modal-title" class="text-xl font-bold text-slate-800">Add Customer</h2>
+                <button onclick="closeModals()" class="p-1 hover:bg-slate-100 rounded-full"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="form-customer" onsubmit="saveCustomer(event)" class="space-y-4">
+                <input type="hidden" id="cust-id">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Full Name</label>
+                    <input type="text" id="cust-name" required class="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Phone Number</label>
+                    <input type="text" id="cust-phone" class="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Theme Color</label>
+                    <input type="color" id="cust-color" value="#3b82f6" class="w-full h-10 p-1 border border-slate-200 rounded-xl cursor-pointer">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 mt-4 shadow-lg shadow-blue-100 transition-all">Save Customer</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-entry" class="modal flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="ent-modal-title" class="text-xl font-bold text-slate-800">Record Entry</h2>
+                <button onclick="closeModals()" class="p-1 hover:bg-slate-100 rounded-full"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="form-entry" onsubmit="saveEntry(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="hidden" id="ent-id">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Customer</label>
+                    <select id="ent-cust-id" required class="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500"></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Reference (Person Name)</label>
+                    <input type="text" id="ent-ref" class="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none" placeholder="e.g. Adnan">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Date</label>
+                    <input type="date" id="ent-date" required oninput="updateDayDisplay()" class="w-full px-4 py-2 border border-slate-200 rounded-xl">
+                    <p id="ent-day-display" class="text-xs font-medium text-blue-600 mt-1"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Work Detail</label>
+                    <input type="text" id="ent-work" required class="w-full px-4 py-2 border border-slate-200 rounded-xl" placeholder="Service / Item">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Qty</label>
+                        <input type="number" step="0.01" id="ent-qty" value="1" class="w-full px-4 py-2 border border-slate-200 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Unit</label>
+                        <select id="ent-unit" class="w-full px-4 py-2 border border-slate-200 rounded-xl">
+                            <option value="Pcs">Pcs</option>
+                            <option value="Sheets">Sheets</option>
+                            <option value="Box">Box</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Total PKR</label>
+                    <input type="number" step="0.01" id="ent-amount" required class="w-full px-4 py-2 border border-slate-200 rounded-xl bg-slate-50 font-bold" placeholder="0.00">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-emerald-600 mb-1">Paid Amount (PKR)</label>
+                    <input type="number" step="0.01" id="ent-received" required class="w-full px-4 py-2 border border-emerald-200 bg-emerald-50 rounded-xl font-bold" placeholder="0.00">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Remarks</label>
+                    <textarea id="ent-note" class="w-full px-4 py-2 border border-slate-200 rounded-xl h-20"></textarea>
+                </div>
+                <button type="submit" class="md:col-span-2 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 mt-4 shadow-lg shadow-blue-100 transition-all">Save Record</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let customers = JSON.parse(localStorage.getItem('pro_customers')) || [];
+        let entries = JSON.parse(localStorage.getItem('pro_entries')) || [];
+        let currentFilterId = null;
+
+        function switchTab(tabId) {
+            currentFilterId = null;
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-tab', 'text-blue-600'));
+            document.getElementById(`sect-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('active-tab');
+            if (tabId === 'dashboard') renderDashboard();
+            if (tabId === 'customers') renderCustomers();
+            if (tabId === 'entries') renderEntries();
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+        }
+
+        function getDayName(dateString) {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const d = new Date(dateString);
+            return isNaN(d.getTime()) ? "N/A" : days[d.getDay()];
+        }
+
+        function updateDayDisplay() {
+            const dateVal = document.getElementById('ent-date').value;
+            if(dateVal) document.getElementById('ent-day-display').innerText = "Selected: " + getDayName(dateVal);
+        }
+
+        // --- BACKUP FUNCTIONS ---
+        function exportFullBackup() {
+            const backupData = {
+                customers: customers,
+                entries: entries,
+                exportDate: new Date().toISOString(),
+                version: "1.0"
+            };
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `LedgerPro_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importFullBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!confirm("Attention: This will replace your current data with the backup file. Are you sure?")) {
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.customers && data.entries) {
+                        customers = data.customers;
+                        entries = data.entries;
+                        saveToLocalStorage();
+                        renderDashboard();
+                        renderCustomers();
+                        renderEntries();
+                        alert("Data successfully restored from backup!");
+                    } else {
+                        alert("Invalid backup file format!");
+                    }
+                } catch(err) {
+                    alert("Error reading backup file!");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function renderDashboard() {
+            const q = document.getElementById('dash-search').value.toLowerCase();
+            const sortVal = document.getElementById('dash-sort').value;
+
+            const total = entries.reduce((s, e) => s + e.amount, 0);
+            const paid = entries.reduce((s, e) => s + e.received, 0);
+            document.getElementById('stat-total').innerText = `Rs. ${total.toLocaleString()}`;
+            document.getElementById('stat-paid').innerText = `Rs. ${paid.toLocaleString()}`;
+            document.getElementById('stat-balance').innerText = `Rs. ${(total - paid).toLocaleString()}`;
+
+            let data = customers.map(c => {
+                const cEntries = entries.filter(e => e.customerId === c.id);
+                const cTotal = cEntries.reduce((s, e) => s + e.amount, 0);
+                const cPaid = cEntries.reduce((s, e) => s + e.received, 0);
+                const latestRef = cEntries.length > 0 ? (cEntries[0].reference || "") : ""; 
+                return { ...c, total: cTotal, paid: cPaid, balance: cTotal - cPaid, reference: latestRef };
+            });
+
+            data = data.filter(c => c.name.toLowerCase().includes(q));
+
+            data.sort((a, b) => {
+                switch(sortVal) {
+                    case 'name-asc': return a.name.localeCompare(b.name);
+                    case 'name-desc': return b.name.localeCompare(a.name);
+                    case 'balance-desc': return b.balance - a.balance;
+                    case 'total-desc': return b.total - a.total;
+                    default: return 0;
+                }
+            });
+
+            const tbody = document.getElementById('dash-list');
+            tbody.innerHTML = data.map(c => `
+                <tr class="hover:bg-slate-50 transition-all">
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-slate-700">${c.name}</div>
+                        ${c.reference ? `<div class="text-[10px] text-slate-400 font-medium">Last Ref: ${c.reference}</div>` : ''}
+                    </td>
+                    <td class="px-6 py-4 text-right text-slate-600 font-medium">Rs. ${c.total.toLocaleString()}</td>
+                    <td class="px-6 py-4 text-right text-emerald-600 font-medium">Rs. ${c.paid.toLocaleString()}</td>
+                    <td class="px-6 py-4 text-right text-rose-500 font-bold">Rs. ${c.balance.toLocaleString()}</td>
+                    <td class="px-6 py-4 text-right">
+                        <span class="px-3 py-1 rounded-full text-[10px] font-bold ${c.balance <= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                            ${c.balance <= 0 ? 'CLEAR' : 'DUE'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderEntries() {
+            const tbody = document.getElementById('entry-list');
+            const sortVal = document.getElementById('entry-sort').value;
+            let displayData = currentFilterId ? entries.filter(e => e.customerId === currentFilterId) : [...entries];
+
+            displayData.sort((a, b) => {
+                const custA = customers.find(c => c.id === a.customerId)?.name || "Unknown";
+                const custB = customers.find(c => c.id === b.customerId)?.name || "Unknown";
+
+                switch(sortVal) {
+                    case 'date-desc': return new Date(b.date) - new Date(a.date);
+                    case 'date-asc': return new Date(a.date) - new Date(b.date);
+                    case 'name-asc': return custA.localeCompare(custB);
+                    case 'amount-desc': return b.amount - a.amount;
+                    default: return 0;
+                }
+            });
+
+            tbody.innerHTML = displayData.map(e => {
+                const c = customers.find(x => x.id === e.customerId);
+                const balance = e.amount - e.received;
+                return `
+                    <tr class="group hover:bg-slate-50 transition-all">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <p class="font-medium text-slate-700">${e.date}</p>
+                            <p class="text-[10px] text-blue-600 font-bold uppercase">${e.day || getDayName(e.date)}</p>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full no-print" style="background-color: ${c?.color || '#ccc'}"></div>
+                                <div>
+                                    <span class="font-bold text-slate-700">${c?.name || 'Unknown'}</span>
+                                    ${e.reference ? `<p class="text-xs text-slate-400">Ref: ${e.reference}</p>` : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-slate-600">${e.qty} <span class="text-xs text-slate-400">${e.unit}</span></td>
+                        <td class="px-6 py-4">
+                            <p class="font-medium text-slate-700">${e.workDetail}</p>
+                            ${e.note ? `<p class="text-xs text-slate-400 italic">Note: ${e.note}</p>` : ''}
+                        </td>
+                        <td class="px-6 py-4 text-right font-medium">Rs. ${e.amount.toLocaleString()}</td>
+                        <td class="px-6 py-4 text-right font-bold text-emerald-600">Rs. ${e.received.toLocaleString()}</td>
+                        <td class="px-6 py-4 text-right font-bold ${balance > 0 ? 'text-rose-500' : 'text-slate-400'}">Rs. ${balance.toLocaleString()}</td>
+                        <td class="px-6 py-4 text-right no-print">
+                            <div class="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="openEntryModal('${e.id}')" class="text-slate-400 hover:text-blue-600 p-1"><i class="fas fa-edit"></i></button>
+                                <button onclick="deleteEntry('${e.id}')" class="text-slate-400 hover:text-red-600 p-1"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function downloadSampleExcel() {
+            const sampleData = [
+                { "Date": "2024-05-20", "Customer Name": "ABC Agency", "Reference": "Adnan", "Work Detail": "Design & Printing", "Quantity": 100, "Unit": "Pcs", "Total Bill": 5000, "Paid Amount": 2500, "Notes": "Half Payment" },
+                { "Date": "2024-05-21", "Customer Name": "XYZ Corp", "Reference": "Imran", "Work Detail": "Flyer Print", "Quantity": 500, "Unit": "Sheets", "Total Bill": 15000, "Paid Amount": 15000, "Notes": "Full Paid" }
+            ];
+            const ws = XLSX.utils.json_to_sheet(sampleData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Records");
+            XLSX.writeFile(wb, "LedgerPro_Sample.xlsx");
+        }
+
+        function handleExcelImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                try {
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    processExcelData(jsonData);
+                } catch(err) { alert("Excel file reading failed!"); }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = '';
+        }
+
+        function processExcelData(data) {
+            data.forEach(row => {
+                const getVal = (ks) => {
+                    const key = Object.keys(row).find(k => ks.some(kw => k.toLowerCase().includes(kw)));
+                    return key ? row[key] : null;
+                };
+
+                const cName = getVal(['customer', 'name', 'party']) || 'New Customer';
+                let dt = getVal(['date', 'time']);
+                if (typeof dt === 'number') dt = new Date((dt - 25569) * 86400 * 1000).toISOString().split('T')[0];
+                else if (!dt) dt = new Date().toISOString().split('T')[0];
+
+                let cust = customers.find(c => c.name.toLowerCase().trim() === cName.toLowerCase().trim());
+                if (!cust) {
+                    cust = { id: Date.now().toString() + Math.random().toString(36).substr(2,4), name: cName, phone: '', color: '#' + Math.floor(Math.random()*16777215).toString(16) };
+                    customers.push(cust);
+                }
+
+                entries.unshift({
+                    id: Date.now().toString() + Math.random().toString(36).substr(2,4),
+                    customerId: cust.id,
+                    reference: getVal(['ref', 'person']) || '',
+                    date: dt,
+                    day: getDayName(dt),
+                    workDetail: getVal(['detail', 'work', 'item']) || 'Imported',
+                    qty: parseFloat(getVal(['qty', 'quantity'])) || 1,
+                    unit: getVal(['unit']) || 'Pcs',
+                    amount: parseFloat(getVal(['total', 'bill', 'amount'])) || 0,
+                    received: parseFloat(getVal(['paid', 'received'])) || 0,
+                    note: getVal(['note', 'remark']) || 'Imported'
+                });
+            });
+            saveToLocalStorage();
+            switchTab('dashboard');
+        }
+
+        function renderCustomers() {
+            const grid = document.getElementById('customer-grid');
+            grid.innerHTML = customers.map(c => {
+                const bal = entries.filter(e => e.customerId === c.id).reduce((sum, e) => sum + (e.amount - e.received), 0);
+                return `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-1.5 h-full" style="background-color: ${c.color}"></div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl font-bold" style="background-color: ${c.color}">
+                                ${c.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="flex gap-1 no-print">
+                                <button onclick="printCustomerLedger('${c.id}')" class="p-2 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"><i class="fas fa-print"></i></button>
+                                <button onclick="openCustomerModal('${c.id}')" class="p-2 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"><i class="fas fa-edit"></i></button>
+                                <button onclick="deleteCustomer('${c.id}')" class="p-2 text-slate-400 hover:text-red-600 rounded-lg transition-colors"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800">${c.name}</h3>
+                        <p class="text-slate-500 mb-4 text-sm">${c.phone || 'No phone'}</p>
+                        <div class="flex justify-between pt-4 border-t border-slate-50 text-sm">
+                            <span class="text-slate-500 font-medium">Balance:</span>
+                            <span class="font-bold ${bal > 0 ? 'text-red-500' : 'text-emerald-600'}">Rs. ${bal.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function saveCustomer(e) {
+            e.preventDefault();
+            const id = document.getElementById('cust-id').value;
+            const data = { id: id || Date.now().toString(), name: document.getElementById('cust-name').value, phone: document.getElementById('cust-phone').value, color: document.getElementById('cust-color').value };
+            if (id) customers = customers.map(c => c.id === id ? data : c);
+            else customers.push(data);
+            saveToLocalStorage();
+            closeModals();
+            renderCustomers();
+        }
+
+        function deleteCustomer(id) {
+            if (confirm("Delete customer and records?")) {
+                customers = customers.filter(c => c.id !== id);
+                entries = entries.filter(e => e.customerId !== id);
+                saveToLocalStorage();
+                renderCustomers();
+                renderDashboard();
+            }
+        }
+
+        function saveEntry(e) {
+            e.preventDefault();
+            const id = document.getElementById('ent-id').value;
+            const dt = document.getElementById('ent-date').value;
+            const data = {
+                id: id || Date.now().toString(),
+                customerId: document.getElementById('ent-cust-id').value,
+                reference: document.getElementById('ent-ref').value,
+                date: dt,
+                day: getDayName(dt),
+                workDetail: document.getElementById('ent-work').value,
+                qty: parseFloat(document.getElementById('ent-qty').value) || 1,
+                unit: document.getElementById('ent-unit').value,
+                amount: parseFloat(document.getElementById('ent-amount').value) || 0,
+                received: parseFloat(document.getElementById('ent-received').value) || 0,
+                note: document.getElementById('ent-note').value
+            };
+            if (id) entries = entries.map(ent => ent.id === id ? data : ent);
+            else entries.unshift(data);
+            saveToLocalStorage();
+            closeModals();
+            renderEntries();
+        }
+
+        function deleteEntry(id) {
+            if (confirm("Delete this record?")) {
+                entries = entries.filter(e => e.id !== id);
+                saveToLocalStorage();
+                renderEntries();
+                renderDashboard();
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('pro_customers', JSON.stringify(customers));
+            localStorage.setItem('pro_entries', JSON.stringify(entries));
+        }
+
+        function openCustomerModal(id = null) {
+            closeModals();
+            const modal = document.getElementById('modal-customer');
+            if (id) {
+                const c = customers.find(x => x.id === id);
+                document.getElementById('cust-id').value = c.id;
+                document.getElementById('cust-name').value = c.name;
+                document.getElementById('cust-phone').value = c.phone;
+                document.getElementById('cust-color').value = c.color;
+            } else {
+                document.getElementById('form-customer').reset();
+                document.getElementById('cust-id').value = "";
+            }
+            modal.style.display = 'flex';
+        }
+
+        function openEntryModal(id = null) {
+            closeModals();
+            const modal = document.getElementById('modal-entry');
+            const select = document.getElementById('ent-cust-id');
+            select.innerHTML = '<option value="">Select Customer</option>' + customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            if (id) {
+                const e = entries.find(x => x.id === id);
+                document.getElementById('ent-id').value = e.id;
+                document.getElementById('ent-cust-id').value = e.customerId;
+                document.getElementById('ent-ref').value = e.reference;
+                document.getElementById('ent-date').value = e.date;
+                document.getElementById('ent-work').value = e.workDetail;
+                document.getElementById('ent-qty').value = e.qty;
+                document.getElementById('ent-unit').value = e.unit;
+                document.getElementById('ent-amount').value = e.amount;
+                document.getElementById('ent-received').value = e.received;
+                document.getElementById('ent-note').value = e.note;
+            } else {
+                document.getElementById('form-entry').reset();
+                document.getElementById('ent-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('ent-id').value = "";
+            }
+            updateDayDisplay();
+            modal.style.display = 'flex';
+        }
+
+        function printSummary() {
+            document.getElementById('print-date').innerText = "Date: " + new Date().toLocaleDateString();
+            document.getElementById('print-report-title').innerText = "Summary Report";
+            window.print();
+        }
+
+        function printAllEntries() {
+            document.getElementById('print-date').innerText = "Date: " + new Date().toLocaleDateString();
+            document.getElementById('print-report-title').innerText = "Ledger Records";
+            window.print();
+        }
+
+        function printCustomerLedger(cid) {
+            const c = customers.find(x => x.id === cid);
+            if (!c) return;
+            currentFilterId = cid;
+            document.getElementById('print-date').innerText = "Date: " + new Date().toLocaleDateString();
+            document.getElementById('print-report-title').innerText = c.name + " - Statement";
+            switchTab('entries');
+            renderEntries();
+            setTimeout(() => { window.print(); currentFilterId = null; renderEntries(); }, 500);
+        }
+
+        window.onload = () => { renderDashboard(); renderCustomers(); renderEntries(); };
+    </script>
+</body>
+</html>
